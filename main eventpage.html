@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMPOSTER PROJECT</title>
+    <style>
+        :root {
+            --bg-black: #080808;
+            --bg-charcoal: #141414;
+            --bg-card: #1f1f1f;
+            --primary-crimson: #dc143c;
+            --primary-red: #ff1e42;
+            --glow-red: rgba(220, 20, 60, 0.4);
+            --text-main: #f0f0f0;
+            --text-sub: #a0a0a0;
+            --border-dark: #2a2a2a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-black);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding-bottom: 60px;
+        }
+
+        header {
+            background-color: var(--bg-charcoal);
+            border-bottom: 2px solid var(--primary-crimson);
+            padding: 25px 8%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .brand h1 {
+            color: var(--primary-red);
+            font-size: 2.2rem;
+            font-weight: 900;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px var(--glow-red);
+        }
+
+        .brand span {
+            color: var(--text-sub);
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            display: block;
+            margin-top: 4px;
+        }
+
+        /* Stopwatch Display (Without Control Buttons) */
+        .stopwatch-box {
+            background: var(--bg-black);
+            border: 2px solid var(--primary-crimson);
+            padding: 12px 28px;
+            border-radius: 4px;
+            text-align: center;
+            box-shadow: 0 0 15px var(--glow-red);
+            animation: pulse 2s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 5px var(--glow-red); }
+            100% { box-shadow: 0 0 20px var(--glow-red); }
+        }
+
+        .stopwatch-label {
+            font-size: 0.7rem;
+            color: var(--primary-red);
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .stopwatch-display {
+            font-size: 1.9rem;
+            font-weight: bold;
+            color: var(--text-main);
+            letter-spacing: 2px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .section-header {
+            color: var(--primary-red);
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            border-left: 4px solid var(--primary-crimson);
+            padding-left: 12px;
+            letter-spacing: 1px;
+        }
+
+        /* Submission Form Card */
+        .form-card {
+            background-color: var(--bg-charcoal);
+            border: 1px solid var(--primary-crimson);
+            border-radius: 6px;
+            padding: 30px;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.8);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--bg-black);
+            border: 1px solid var(--border-dark);
+            color: var(--primary-red);
+            font-size: 1rem;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary-crimson);
+            box-shadow: 0 0 8px var(--glow-red);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary-crimson);
+            color: #fff;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+
+        .btn-submit:hover {
+            background-color: var(--primary-red);
+            box-shadow: 0 0 20px var(--glow-red);
+        }
+
+        .alert-box {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 4px;
+            display: none;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .alert-success {
+            background-color: rgba(0, 255, 128, 0.1);
+            border: 1px solid #00ff80;
+            color: #00ff80;
+        }
+
+        .alert-error {
+            background-color: rgba(220, 20, 60, 0.2);
+            border: 1px solid var(--primary-crimson);
+            color: var(--primary-red);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">
+            <h1>IMPOSTER PROJECT</h1>
+            <span>CODE EVALUATION PORTAL</span>
+        </div>
+        <div class="stopwatch-container">
+            <div class="stopwatch-box">
+                <div class="stopwatch-label">ELAPSED TIME</div>
+                <div class="stopwatch-display" id="stopwatch">00:00:00</div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- Submission Form -->
+        <div class="form-card">
+            <h2 class="section-header">Submit GitHub Repository</h2>
+            <form id="submissionForm">
+                
+                <div class="form-group">
+                    <label for="teamName">TEAM / PARTICIPANT NAME</label>
+                    <input type="text" id="teamName" placeholder="e.g., Red Vent Specialist" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="taskName">TASK</label>
+                    <input type="text" id="taskName" placeholder="e.g., Task 1: System Monitoring" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="githubUrl">GITHUB REPOSITORY LINK</label>
+                    <input type="url" id="githubUrl" placeholder="https://github.com/username/impostor-repo" required>
+                </div>
+
+                <button type="submit" class="btn-submit">Submit Link for Evaluation</button>
+                <div id="alertBox" class="alert-box"></div>
+
+            </form>
+        </div>
+
+    </div>
+
+    <script>
+        // ---------------- AUTOMATIC STOPWATCH ----------------
+        let elapsedSeconds = 0;
+        let stopwatchInterval = null;
+
+        const stopwatchDisplay = document.getElementById('stopwatch');
+
+        function updateStopwatchDisplay() {
+            let hours = Math.floor(elapsedSeconds / 3600);
+            let minutes = Math.floor((elapsedSeconds % 3600) / 60);
+            let seconds = elapsedSeconds % 60;
+
+            const pad = (n) => String(n).padStart(2, '0');
+            stopwatchDisplay.innerText = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+        }
+
+        // Starts automatically on page load
+        stopwatchInterval = setInterval(() => {
+            elapsedSeconds++;
+            updateStopwatchDisplay();
+        }, 1000);
+
+        // ---------------- FORM SUBMISSION HANDLING ----------------
+        const form = document.getElementById('submissionForm');
+        const alertBox = document.getElementById('alertBox');
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const teamName = document.getElementById('teamName').value.trim();
+            const taskName = document.getElementById('taskName').value.trim();
+            const githubUrl = document.getElementById('githubUrl').value.trim();
+
+            const githubRegex = /^https?:\/\/(www\.)?github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/?$/;
+
+            if (!githubRegex.test(githubUrl)) {
+                alertBox.className = 'alert-box alert-error';
+                alertBox.innerText = 'INVALID LINK: Please enter a valid GitHub repository URL (e.g., https://github.com/user/repository).';
+                alertBox.style.display = 'block';
+                return;
+            }
+
+            // Stop the stopwatch automatically on valid submission
+            clearInterval(stopwatchInterval);
+            const finalTime = stopwatchDisplay.innerText;
+
+            alertBox.className = 'alert-box alert-success';
+            alertBox.innerText = `SUBMISSION SUCCESSFUL! "${teamName}" submitted for ${taskName} at ${finalTime}. Stopwatch stopped.`;
+            alertBox.style.display = 'block';
+
+            form.reset();
+        });
+    </script>
+
+</body>
+</html>
