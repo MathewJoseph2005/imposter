@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIZZBUZZ SUBMISSION | Astra 11.0</title>
+    <!-- Google Fonts for Among Us / Sci-Fi style -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Color Palette Setup */
+        :root {
+            --bg-black: #08070b;
+            --dark-grey: #16151d;
+            --cherry-red: #c00d2e;
+            --crimson-red: #ff1e43;
+            --violet: #6b21a8;
+            --deep-blue: #0d1b2a;
+            --cyan-accent: #00f0ff;
+            --green-accent: #00ff66;
+            --text-light: #f3f4f6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-black);
+            color: var(--text-light);
+            overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        /* Animated Space Canvas Background */
+        #space-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            background: radial-gradient(circle at center, #1a0b2e 0%, var(--bg-black) 80%);
+        }
+
+        /* Header / Navbar */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 5%;
+            background: rgba(8, 7, 11, 0.85);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid var(--cherry-red);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .org-branding {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            color: #aaa;
+            letter-spacing: 1px;
+        }
+
+        .org-branding span {
+            color: var(--crimson-red);
+            font-weight: bold;
+        }
+
+        /* Content Container Layout */
+        .container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        /* Card Panels */
+        .panel {
+            background: rgba(22, 21, 29, 0.85);
+            border: 2px solid var(--violet);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 0 15px rgba(107, 33, 168, 0.3);
+            position: relative;
+            backdrop-filter: blur(5px);
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--cherry-red), var(--violet), var(--deep-blue));
+        }
+
+        /* Precision Timer Card */
+        .timer-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(13, 27, 42, 0.9);
+            border: 2px solid var(--cyan-accent);
+            border-radius: 8px;
+            padding: 15px 25px;
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+        }
+
+        .timer-label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            color: #aaa;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .live-dot {
+            width: 12px;
+            height: 12px;
+            background-color: var(--green-accent);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--green-accent);
+            animation: pulse-green 0.8s infinite alternate;
+        }
+
+        @keyframes pulse-green {
+            from { opacity: 0.3; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1.1); }
+        }
+
+        .timer-display {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.4rem;
+            font-weight: 900;
+            color: var(--green-accent);
+            text-shadow: 0 0 12px rgba(0, 255, 102, 0.7);
+            letter-spacing: 3px;
+        }
+
+        /* Task Submission Area */
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .input-group label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            color: var(--cyan-accent);
+            letter-spacing: 1px;
+        }
+
+        .participant-input {
+            width: 100%;
+            background: rgba(8, 7, 11, 0.9);
+            border: 1px solid var(--violet);
+            border-radius: 6px;
+            padding: 12px;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .participant-input:focus {
+            border-color: var(--cyan-accent);
+        }
+
+        .task-textarea {
+            width: 100%;
+            height: 260px;
+            background: rgba(8, 7, 11, 0.95);
+            border: 2px solid var(--violet);
+            border-radius: 8px;
+            padding: 15px;
+            color: var(--green-accent);
+            font-family: 'Fira Code', monospace;
+            font-size: 1rem;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .task-textarea:focus {
+            border-color: var(--cyan-accent);
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+        }
+
+        /* Action Buttons */
+        .btn-group {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 15px;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #c00d2e, var(--crimson-red));
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 800;
+            padding: 14px 40px;
+            border: 2px solid #000;
+            border-radius: 50px;
+            cursor: pointer;
+            letter-spacing: 2px;
+            box-shadow: 0 0 15px rgba(255, 30, 67, 0.5);
+            transition: all 0.2s ease-in-out;
+        }
+
+        .submit-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(255, 30, 67, 0.8);
+            background: linear-gradient(135deg, var(--crimson-red), #ff5270);
+        }
+
+        /* Submission Confirmation Banner */
+        .status-msg {
+            display: none;
+            margin-top: 20px;
+            padding: 18px;
+            background: rgba(0, 255, 102, 0.1);
+            border: 2px solid var(--green-accent);
+            border-radius: 8px;
+            color: var(--green-accent);
+            font-family: 'Orbitron', sans-serif;
+            text-align: center;
+            font-size: 1.1rem;
+            box-shadow: 0 0 15px rgba(0, 255, 102, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Space Canvas Animated Background -->
+    <canvas id="space-bg"></canvas>
+
+    <!-- Header / Branding -->
+    <header>
+        <div class="org-branding">
+            ST. JOSEPH'S COLLEGE OF ENG. & TECH. | <span>ASTRA 11.0</span>
+        </div>
+        <div class="org-branding">
+            FIZZBUZZ MODULE
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <div class="container">
+
+        <!-- Live Stopwatch Timer (MM:SS) -->
+        <div class="timer-box">
+            <span class="timer-label"><span class="live-dot" id="live-dot"></span> SUBMISSION TIMER (MM:SS):</span>
+            <span class="timer-display" id="timer">00:00</span>
+        </div>
+
+        <!-- Task Drop Area & Submission Form -->
+        <div class="panel">
+            <form id="fizzbuzz-form" onsubmit="submitTask(event)">
+                <div class="input-group">
+                    <label for="participant-id">PARTICIPANT / TEAM NAME</label>
+                    <input type="text" id="participant-id" class="participant-input" placeholder="Enter Team or Participant Name" required>
+                </div>
+
+                <div class="input-group" style="margin-top: 20px;">
+                    <label for="code-input">DROP YOUR TASK / SOLUTION HERE</label>
+                    <textarea id="code-input" class="task-textarea" placeholder="// Paste or drop your task output / code here..." required></textarea>
+                </div>
+
+                <div class="btn-group">
+                    <button type="submit" id="submit-btn" class="submit-btn">SUBMIT TASK</button>
+                </div>
+            </form>
+
+            <div id="status-msg" class="status-msg"></div>
+        </div>
+
+    </div>
+
+    <!-- JavaScript Engine -->
+    <script>
+        // 1. Space Canvas Background
+        const canvas = document.getElementById('space-bg');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        const stars = [];
+        const colors = ['#ffffff', '#ff1e43', '#00f0ff', '#6b21a8'];
+
+        for (let i = 0; i < 150; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                radius: Math.random() * 1.8,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                speed: Math.random() * 0.5 + 0.1
+            });
+        }
+
+        function animateSpace() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            stars.forEach(star => {
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                ctx.fillStyle = star.color;
+                ctx.fill();
+
+                star.y += star.speed;
+                if (star.y > canvas.height) {
+                    star.y = 0;
+                    star.x = Math.random() * canvas.width;
+                }
+            });
+            requestAnimationFrame(animateSpace);
+        }
+        animateSpace();
+
+        // 2. Stopwatch Timer (MM:SS)
+        let startTime = Date.now();
+        let timerInterval = null;
+
+        function updateTimer() {
+            const elapsedMs = Date.now() - startTime;
+            
+            const totalSeconds = Math.floor(elapsedMs / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+
+            const formattedMin = String(minutes).padStart(2, '0');
+            const formattedSec = String(seconds).padStart(2, '0');
+
+            document.getElementById('timer').textContent = `${formattedMin}:${formattedSec}`;
+        }
+
+        // Start timer ticking immediately
+        updateTimer();
+        timerInterval = setInterval(updateTimer, 1000);
+
+        // 3. Submission Handler
+        function submitTask(event) {
+            event.preventDefault(); // Stop page reloads
+
+            // Freeze timer on submission
+            clearInterval(timerInterval);
+
+            // Turn off glowing live signal
+            const dot = document.getElementById('live-dot');
+            dot.style.animation = 'none';
+            dot.style.backgroundColor = '#555';
+            dot.style.boxShadow = 'none';
+
+            const recordTime = document.getElementById('timer').textContent;
+            const participantName = document.getElementById('participant-id').value;
+
+            // Lock UI controls to prevent re-submitting
+            document.getElementById('code-input').disabled = true;
+            document.getElementById('participant-id').disabled = true;
+            
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.5';
+            submitBtn.style.cursor = 'not-allowed';
+            submitBtn.textContent = 'SUBMITTED';
+
+            // Display completion message with exact MM:SS timestamp
+            const statusMsg = document.getElementById('status-msg');
+            statusMsg.style.display = 'block';
+            statusMsg.innerHTML = `✓ TASK SUBMITTED!<br>Participant: <strong>${participantName}</strong><br>Final Timestamp: <strong>${recordTime} (MM:SS)</strong>`;
+        }
+    </script>
+</body>
+</html>

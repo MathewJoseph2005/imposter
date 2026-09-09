@@ -334,7 +334,9 @@
             <div class="event-subtitle">Department of Computer Science & Engineering</div>
             <h1 class="main-title">THE IMPOSTER<br>PROJECT</h1>
         </div>
-       
+        <div class="host-dept">
+            THERE IS 1 IMPOSTER AMONG US. CAN YOUR TEAM FIND IT?
+        </div>
     </section>
 
     <!-- Main Content Container -->
@@ -361,7 +363,7 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">4</div>
-                    <div class="stat-label">MEMBERS </div>
+                    <div class="stat-label">MEMBERS</div>
                 </div>
             </div>
         </div>
@@ -369,8 +371,7 @@
         <!-- Rules & Regulations Panel -->
         <div class="panel">
             <h2 class="panel-title">
-                <svg class="crewmate-svg" viewBox="0 0 100 120">
-                    <ellipse cx="50" cy="60" rx="30" ry="45" fill="#c00d2e" stroke="#000" stroke-width="6"/>
+                <svg c~="30" ry="45" fill="#c00d2e" stroke="#000" stroke-width="6"/>
                     <ellipse cx="65" cy="45" rx="18" ry="12" fill="#00f0ff" stroke="#000" stroke-width="5"/>
                     <rect x="15" y="45" width="12" height="35" rx="5" fill="#a00a24" stroke="#000" stroke-width="5"/>
                 </svg>
@@ -460,18 +461,18 @@
         animateSpace();
 
         // Emergency meeting fun interaction
+        // Start button navigation
+        function startGame() {
+            // Navigate to main page; update filename if needed
+            window.location.href = 'main.html';
+        }
+
         function triggerEmergency() {
             document.body.style.backgroundColor = 'red';
             setTimeout(() => {
                 document.body.style.backgroundColor = 'var(--bg-black)';
                 alert('EMERGENCY MEETING CALLED!\nCheck Programming Lab 2 for Impostors before time runs out!');
             }, 200);
-        }
-
-        // Start button navigation
-        function startGame() {
-            // Navigate to main page; change the target file if needed
-            window.location.href = 'main.html';
         }
     </script>
 </body>
