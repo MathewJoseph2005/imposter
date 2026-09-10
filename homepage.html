@@ -71,30 +71,6 @@
             font-weight: bold;
         }
 
-        /* Start button in header */
-        .start-btn {
-            font-family: 'Orbitron', sans-serif;
-            background: linear-gradient(90deg, var(--crimson-red), var(--cherry-red));
-            color: #fff;
-            border: 2px solid #000;
-            padding: 8px 16px;
-            border-radius: 10px;
-            font-weight: 900;
-            letter-spacing: 1px;
-            cursor: pointer;
-            box-shadow: 0 6px 18px rgba(192,13,46,0.25);
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-
-        .start-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 26px rgba(255,30,67,0.32);
-        }
-
-        .start-btn:active {
-            transform: translateY(0);
-        }
-
         /* Hero Section */
         .hero {
             display: flex;
@@ -125,8 +101,7 @@
             font-size: clamp(2.5rem, 8vw, 5rem);
             font-weight: 900;
             color: var(--crimson-red);
-            text-shadow: 0 0 20px rgba(255, 30, 67, 0.6), 4px 4px 0px #000;
-            line-height: 1;
+            text-shadow: 0 0 20px rgba(255, 30, 67, 0.6), 4px 4px 0px #000;      line-height: 1;
             letter-spacing: 2px;
         }
 
@@ -222,6 +197,42 @@
             height: 45px;
             display: inline-block;
             vertical-align: middle;
+        }
+
+        /* Prize Pool List */
+        .prize-list {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .prize-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(8, 7, 11, 0.6);
+            border-left: 4px solid var(--cherry-red);
+            border-radius: 4px;
+            font-size: 1.2rem;
+        }
+
+        .prize-item.first {
+            border-left-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+        .prize-item.second {
+            border-left-color: #c0c0c0;
+        }
+        .prize-item.third {
+            border-left-color: #cd7f32;
+        }
+
+        .prize-amount {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+            color: #fff;
         }
 
         /* Rules List Styling */
@@ -325,7 +336,9 @@
         <div class="org-branding">
             ST. JOSEPH'S COLLEGE OF ENG. & TECH. | <span>ASTRA 11.0</span>
         </div>
-        <button class="start-btn" onclick="startGame()">START</button>
+        <div class="org-branding">
+            CADD CENTRE
+        </div>
     </header>
 
     <!-- Hero Banner -->
@@ -362,30 +375,55 @@
                     <div class="stat-label">REG FEE / TEAM</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">4</div>
-                    <div class="stat-label">MEMBERS</div>
+                    <div class="stat-value">4 - 5</div>
+                    <div class="stat-label">MEMBERS / TEAM</div>
                 </div>
             </div>
+        </div>
+
+        <!-- Prize Pool Panel -->
+        <div class="panel">
+            <h2 class="panel-title">PRIZE POOL</h2>
+            <ul class="prize-list">
+                <li class="prize-item first">
+                    <span>🥇 1st Place</span>
+                    <span class="prize-amount">₹5,000</span>
+                </li>
+                <li class="prize-item second">
+                    <span>🥈 2nd Place</span>
+                    <span class="prize-amount">₹3,000</span>
+                </li>
+                <li class="prize-item third">
+                    <span>🥉 3rd Place</span>
+                    <span class="prize-amount">₹2,000</span>
+                </li>
+            </ul>
         </div>
 
         <!-- Rules & Regulations Panel -->
         <div class="panel">
             <h2 class="panel-title">
-                <svg c~="30" ry="45" fill="#c00d2e" stroke="#000" stroke-width="6"/>
+                <svg class="crewmate-svg" viewBox="0 0 100 120">
+                    <ellipse cx="50" cy="60" rx="30" ry="45" fill="#c00d2e" stroke="#000" stroke-width="6"/>
                     <ellipse cx="65" cy="45" rx="18" ry="12" fill="#00f0ff" stroke="#000" stroke-width="5"/>
                     <rect x="15" y="45" width="12" height="35" rx="5" fill="#a00a24" stroke="#000" stroke-width="5"/>
                 </svg>
                 RULES
             </h2>
             <ol class="rules-list">
-                <li>Each team must consist of <strong>4 participants</strong>.</li>
+                <li>Each team must consist of <strong>4–5 participants</strong>.</li>
                 <li>All team members will receive the <strong>main problem statement</strong>, while one randomly selected member will secretly receive an <strong>additional/different objective</strong>.</li>
                 <li>The impostor must not openly reveal their identity or objective.</li>
                 <li>Teams must develop a functional solution within the given time limit.</li>
                 <li>Participants may discuss, plan, and divide tasks freely within their team.</li>
                 <li>The use of <strong>AI tools, internet resources, and pre-existing code</strong> will be allowed/restricted according to the event coordinator's guidelines.</li>
                 <li>Teams will have designated <strong>checkpoints</strong> where they may discuss their progress and identify the suspected impostor.</li>
-                
+                <li>At the end of the event, each team must:
+                    <ul>
+                        <li>Submit their completed solution.</li>
+                        <li>Identify the member they suspect to be the impostor.</li>
+                    </ul>
+                </li>
                 <li>The <strong>impostor receives points</strong> for successfully influencing the team's outcome without being detected.</li>
                 <li>The <strong>team receives points</strong> based on:
                     <ul>
@@ -461,12 +499,6 @@
         animateSpace();
 
         // Emergency meeting fun interaction
-        // Start button navigation
-        function startGame() {
-            // Navigate to main page; update filename if needed
-            window.location.href = 'main.html';
-        }
-
         function triggerEmergency() {
             document.body.style.backgroundColor = 'red';
             setTimeout(() => {
