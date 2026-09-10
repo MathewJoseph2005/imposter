@@ -123,6 +123,94 @@ app.post('/api/register-team', async (req, res) => {
   }
 });
 
+app.get('/api/registered-teams', async (req, res) => {
+  try {
+    const { data: teams, error: teamsError } = await supabase
+      .from('teams')
+      .select('*')
+      .order('id', { ascending: true });
+
+    if (teamsError) {
+      return res.status(500).json({ success: false, message: teamsError.message });
+    }
+
+    const { data: participants, error: participantsError } = await supabase
+      .from('participants')
+      .select('*')
+      .order('id', { ascending: true });
+
+    if (participantsError) {
+      return res.status(500).json({ success: false, message: participantsError.message });
+    }
+
+    const participantsByTeam = {};
+    (participants || []).forEach((participant) => {
+      if (!participantsByTeam[participant.team_id]) {
+        participantsByTeam[participant.team_id] = [];
+      }
+      participantsByTeam[participant.team_id].push(participant.participant_name);
+    });
+
+    const teamsWithMembers = (teams || []).map((team) => ({
+      id: team.id,
+      team_name: team.team_name,
+      team_code: team.team_code,
+      members: participantsByTeam[team.id] || []
+    }));
+
+    return res.status(200).json({
+      success: true,
+      teams: teamsWithMembers,
+      total_teams: teamsWithMembers.length,
+      total_participants: (participants || []).length
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message || 'Unable to fetch registered teams.' });
+  }
+});
+
+app.get('/api/shuffle-layout', async (req, res) => {
+  try {
+    const { data: teams, error: teamsError } = await supabase
+      .from('teams')
+      .select('id, team_name')
+      .order('id', { ascending: true });
+
+    if (teamsError) {
+      return res.status(500).json({ success: false, message: teamsError.message });
+    }
+
+    const { data: participants, error: participantsError } = await supabase
+      .from('participants')
+      .select('*')
+      .order('id', { ascending: true });
+
+    if (participantsError) {
+      return res.status(500).json({ success: false, message: participantsError.message });
+    }
+
+    const teamMap = {};
+    (teams || []).forEach((team) => {
+      teamMap[team.id] = team.team_name;
+    });
+
+    const seatRows = (participants || []).map((participant) => ({
+      id: participant.id,
+      participant_name: participant.participant_name,
+      original_team: teamMap[participant.team_id] || 'Unknown Team',
+      seating_group: participant.shuffle_group || 'Unassigned',
+      role: participant.player_role || (participant.is_imposter ? 'Imposter' : 'Crewmate')
+    }));
+
+    return res.status(200).json({
+      success: true,
+      participants: seatRows
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message || 'Unable to fetch seating layout.' });
+  }
+});
+
 app.post('/api/authenticate', async (req, res) => {
   try {
     const name = String(req.body?.name || '').trim();
@@ -222,52 +310,88 @@ app.post('/api/start-shuffle', async (req, res) => {
       participantsByTeam[participant.team_id].push(participant);
     });
 
-    const updates = [];
-    const imposterAssignments = [];
+    const teamIds = Object.keys(participantsByTeam);
+    const selectedImposters = [];
 
-    Object.keys(participantsByTeam).forEach((teamId) => {
-      const members = [...participantsByTeam[teamId]].sort(() => Math.random() - 0.5);
-      if (members.length < 2) {
-        return;
+    for (const teamId of teamIds) {
+      const teamMembers = [...participantsByTeam[teamId]].sort(() => Math.random() - 0.5);
+      if (teamMembers.length === 0) {
+        continue;
       }
 
-      const imposter = members[0];
-      imposterAssignments.push(imposter.id);
+      const imposter = teamMembers[0];
+      selectedImposters.push(imposter);
+    }
 
-      members.forEach((member) => {
-        if (member.id === imposter.id) {
-          updates.push({
-            id: member.id,
-            is_imposter: true,
-            shuffle_group: null,
-            player_role: 'Imposter'
-          });
-        }
-      });
-    });
-
-    const remainingParticipants = allParticipants.filter((participant) => !imposterAssignments.includes(participant.id));
-
-    const shuffledRemaining = [...remainingParticipants].sort(() => Math.random() - 0.5);
-    const groups = Array.from({ length: 6 }, (_, index) => ({
-      groupName: `Group ${index + 1}`,
-      members: shuffledRemaining.slice(index * 3, index * 3 + 3)
-    }));
-
-    if (groups.some((group) => group.members.length !== 3)) {
+    if (selectedImposters.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Unable to create balanced shuffle groups.'
+        message: 'No participants available for shuffle.'
       });
     }
 
+    const imposterIds = new Set(selectedImposters.map((member) => member.id));
+    const remainingParticipants = allParticipants.filter((participant) => !imposterIds.has(participant.id));
+
+    const groups = Array.from({ length: selectedImposters.length }, (_, index) => ({
+      groupName: `Group ${index + 1}`,
+      imposter: selectedImposters[index],
+      members: [selectedImposters[index]]
+    }));
+
+    let assigned = false;
+    let attempt = 0;
+
+    while (!assigned && attempt < 200) {
+      attempt += 1;
+
+      const workingGroups = groups.map((group) => ({
+        groupName: group.groupName,
+        imposter: group.imposter,
+        members: [group.imposter]
+      }));
+
+      const specialists = [...remainingParticipants].sort(() => Math.random() - 0.5);
+      let validLayout = true;
+
+      for (const specialist of specialists) {
+        const eligibleGroups = workingGroups.filter((group) => {
+          const hasSpace = group.members.length < 4;
+          const sameTeamAsImposter = group.imposter.team_id === specialist.team_id;
+          const sameTeamAlreadyPresent = group.members.some((member) => member.team_id === specialist.team_id);
+          return hasSpace && !sameTeamAsImposter && !sameTeamAlreadyPresent;
+        });
+
+        if (eligibleGroups.length === 0) {
+          validLayout = false;
+          break;
+        }
+
+        const chosenGroup = eligibleGroups[Math.floor(Math.random() * eligibleGroups.length)];
+        chosenGroup.members.push(specialist);
+      }
+
+      if (validLayout && workingGroups.every((group) => group.members.length === 4)) {
+        assigned = true;
+        groups.splice(0, groups.length, ...workingGroups);
+      }
+    }
+
+    if (!assigned) {
+      return res.status(400).json({
+        success: false,
+        message: 'Unable to create a valid seating arrangement for all teams.'
+      });
+    }
+
+    const updates = [];
     groups.forEach((group) => {
       group.members.forEach((member) => {
         updates.push({
           id: member.id,
-          is_imposter: false,
+          is_imposter: member.id === group.imposter.id,
           shuffle_group: group.groupName,
-          player_role: 'Crewmate'
+          player_role: member.id === group.imposter.id ? 'Imposter' : 'Crewmate'
         });
       });
     });
@@ -289,7 +413,7 @@ app.post('/api/start-shuffle', async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      imposters_selected: imposterAssignments.length,
+      imposters_selected: selectedImposters.length,
       groups_created: groups.length
     });
   } catch (error) {

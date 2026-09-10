@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team Registration | Imposter</title>
+    <title>Coordinator Dashboard | Imposter</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap');
 
@@ -45,29 +45,81 @@
             z-index: 1;
             min-height: 100vh;
             display: flex;
-            align-items: center;
+            align-items: stretch;
             justify-content: center;
-            padding: 30px 16px;
+            padding: 24px;
         }
 
-        .registration-card {
-            width: min(720px, 100%);
+        .dashboard-shell {
+            width: min(1200px, 100%);
+            display: grid;
+            grid-template-columns: 260px minmax(0, 1fr);
             background: rgba(10, 18, 35, 0.88);
             border: 1px solid var(--panel-border);
             border-radius: 24px;
+            overflow: hidden;
             box-shadow: 0 0 30px rgba(0, 240, 255, 0.18);
-            padding: 30px 28px 18px;
             backdrop-filter: blur(8px);
+        }
+
+        .dashboard-sidebar {
+            background: rgba(10, 15, 28, 0.96);
+            border-right: 1px solid rgba(158, 178, 214, 0.2);
+            padding: 22px 14px;
         }
 
         .brand {
             font-family: 'Orbitron', sans-serif;
             text-transform: uppercase;
-            letter-spacing: 0.22em;
+            letter-spacing: 0.18em;
             text-align: center;
             color: var(--accent);
-            font-size: clamp(1.5rem, 2.5vw, 2.5rem);
-            margin: 0 0 12px;
+            font-size: 1.4rem;
+            margin: 0 0 24px;
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            width: 100%;
+            border: 1px solid rgba(158, 178, 214, 0.24);
+            background: transparent;
+            color: var(--text);
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 0.72rem;
+            border-radius: 12px;
+            padding: 12px 14px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.16), rgba(75, 140, 255, 0.12));
+            border-color: rgba(0, 240, 255, 0.42);
+            color: var(--accent);
+        }
+
+        .nav-btn:hover {
+            border-color: rgba(0, 240, 255, 0.42);
+        }
+
+        .dashboard-content {
+            padding: 26px 24px 20px;
+        }
+
+        .panel-section {
+            display: none;
+        }
+
+        .panel-section.active {
+            display: block;
         }
 
         .subtitle {
@@ -76,7 +128,16 @@
             letter-spacing: 0.14em;
             text-transform: uppercase;
             margin-bottom: 20px;
-            font-size: 0.78rem;
+            font-size: 0.72rem;
+        }
+
+        .panel-title {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--accent);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin: 0 0 18px;
+            font-size: 1rem;
         }
 
         .form-grid {
@@ -187,9 +248,201 @@
             margin-top: 16px;
         }
 
+        .summary-row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .summary-box {
+            background: rgba(15, 23, 38, 0.8);
+            border: 1px solid rgba(158, 178, 214, 0.28);
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .summary-label {
+            color: var(--muted);
+            font-size: 0.72rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .summary-value {
+            color: var(--text);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.7rem;
+        }
+
+        .team-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .team-card {
+            background: rgba(13, 20, 34, 0.9);
+            border: 1px solid rgba(158, 178, 214, 0.24);
+            border-radius: 12px;
+            padding: 14px 16px;
+        }
+
+        .team-card.incomplete {
+            border-color: rgba(255, 77, 109, 0.45);
+            background: rgba(50, 18, 26, 0.72);
+        }
+
+        .team-card-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .team-card-name {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--text);
+            font-size: 1rem;
+            letter-spacing: 0.06em;
+        }
+
+        .team-card-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .team-card-code {
+            color: var(--accent);
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .team-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .team-badge.complete {
+            background: rgba(85, 230, 165, 0.15);
+            color: #b5f5d5;
+            border: 1px solid rgba(85, 230, 165, 0.35);
+        }
+
+        .team-badge.incomplete {
+            background: rgba(255, 77, 109, 0.12);
+            color: #ffbfd0;
+            border: 1px solid rgba(255, 77, 109, 0.36);
+        }
+
+        .team-warning {
+            margin-top: 10px;
+            color: #ffbfd0;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .team-members {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 0;
+            margin: 0;
+        }
+
+        .team-members li {
+            background: rgba(0, 240, 255, 0.08);
+            color: var(--text);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 0.86rem;
+        }
+
+        .shuffle-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        .seating-groups {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
+        }
+
+        .group-card {
+            background: rgba(14, 23, 38, 0.9);
+            border: 1px solid rgba(158, 178, 214, 0.24);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .group-card h3 {
+            margin: 0 0 10px;
+            color: var(--accent);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.95rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .group-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.84rem;
+        }
+
+        .group-table th,
+        .group-table td {
+            text-align: left;
+            padding: 8px 6px;
+            border-bottom: 1px solid rgba(158, 178, 214, 0.12);
+            vertical-align: top;
+            color: var(--text);
+        }
+
+        .group-table th {
+            color: var(--muted);
+            font-size: 0.68rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-sidebar {
+                border-right: none;
+                border-bottom: 1px solid rgba(158, 178, 214, 0.2);
+            }
+        }
+
         @media (max-width: 640px) {
             .form-grid { grid-template-columns: 1fr; }
-            .registration-card { padding: 22px 18px; }
+            .summary-row { grid-template-columns: 1fr; }
+            .shuffle-actions { flex-direction: column; }
+            .page-shell { padding: 12px; }
+            .dashboard-content { padding: 18px 16px; }
         }
     </style>
 </head>
@@ -197,47 +450,87 @@
     <canvas id="space-bg"></canvas>
 
     <div class="page-shell">
-        <div class="registration-card">
-            <h1 class="brand">Imposter</h1>
-            <div class="subtitle">Team Registration for Coordinators</div>
-
-            <form id="team-registration-form">
-                <div class="form-grid">
-                    <div class="field full">
-                        <label for="team-name">Team Name</label>
-                        <input id="team-name" name="team_name" type="text" placeholder="Enter team name" required>
-                    </div>
-
-                    <div class="field full">
-                        <label for="member-1">Participant 1</label>
-                        <input id="member-1" name="member_1" type="text" placeholder="Full name" required>
-                    </div>
-
-                    <div class="field">
-                        <label for="member-2">Participant 2</label>
-                        <input id="member-2" name="member_2" type="text" placeholder="Full name" required>
-                    </div>
-
-                    <div class="field">
-                        <label for="member-3">Participant 3</label>
-                        <input id="member-3" name="member_3" type="text" placeholder="Full name" required>
-                    </div>
-
-                    <div class="field">
-                        <label for="member-4">Participant 4</label>
-                        <input id="member-4" name="member_4" type="text" placeholder="Full name" required>
-                    </div>
+        <div class="dashboard-shell">
+            <aside class="dashboard-sidebar">
+                <h1 class="brand">Imposter</h1>
+                <div class="sidebar-nav">
+                    <button class="nav-btn active" data-section="team-registration">Team Registration</button>
+                    <button class="nav-btn" data-section="registered-teams">Registered Teams</button>
+                    <button class="nav-btn" data-section="imposter-shuffle">Imposter Shuffle</button>
+                    <button class="nav-btn" data-section="seating-arrangement">Seating Arrangement</button>
                 </div>
+            </aside>
 
-                <div class="button-row">
-                    <button type="submit" class="submit-btn">Register Team</button>
-                    <button type="button" class="secondary-btn" onclick="window.location.href='homepage.html'">Return to Login</button>
-                </div>
-            </form>
+            <main class="dashboard-content">
+                <section id="team-registration" class="panel-section active">
+                    <div class="subtitle">Coordinator Dashboard</div>
+                    <form id="team-registration-form">
+                        <div class="form-grid">
+                            <div class="field full">
+                                <label for="team-name">Team Name</label>
+                                <input id="team-name" name="team_name" type="text" placeholder="Enter team name" required>
+                            </div>
 
-            <div id="response-box" class="response-box"></div>
+                            <div class="field full">
+                                <label for="member-1">Participant 1</label>
+                                <input id="member-1" name="member_1" type="text" placeholder="Full name" required>
+                            </div>
 
-            <p class="note">After registration, participants can sign in from the main homepage using their exact names and the team name.</p>
+                            <div class="field">
+                                <label for="member-2">Participant 2</label>
+                                <input id="member-2" name="member_2" type="text" placeholder="Full name" required>
+                            </div>
+
+                            <div class="field">
+                                <label for="member-3">Participant 3</label>
+                                <input id="member-3" name="member_3" type="text" placeholder="Full name" required>
+                            </div>
+
+                            <div class="field">
+                                <label for="member-4">Participant 4</label>
+                                <input id="member-4" name="member_4" type="text" placeholder="Full name" required>
+                            </div>
+                        </div>
+
+                        <div class="button-row">
+                            <button type="submit" class="submit-btn">Register Team</button>
+                            <button type="button" class="secondary-btn" onclick="window.location.href='homepage.html'">Return to Login</button>
+                        </div>
+                    </form>
+
+                    <div id="response-box" class="response-box"></div>
+                    <p class="note">After registration, participants can sign in from the main homepage using their exact names and the team name.</p>
+                </section>
+
+                <section id="registered-teams" class="panel-section">
+                    <h2 class="panel-title">Registered Teams</h2>
+                    <div class="summary-row">
+                        <div class="summary-box">
+                            <span class="summary-label">Total Teams</span>
+                            <span id="total-teams" class="summary-value">0</span>
+                        </div>
+                        <div class="summary-box">
+                            <span class="summary-label">Total Participants</span>
+                            <span id="total-participants" class="summary-value">0</span>
+                        </div>
+                    </div>
+                    <div id="registered-teams-list" class="team-list"></div>
+                </section>
+
+                <section id="imposter-shuffle" class="panel-section">
+                    <h2 class="panel-title">Imposter Shuffle</h2>
+                    <div class="shuffle-actions">
+                        <button id="shuffle-all-btn" type="button" class="submit-btn">Shuffle All Teams</button>
+                        <button id="retry-shuffle-btn" type="button" class="secondary-btn">Retry Shuffle (Testing)</button>
+                    </div>
+                    <div id="shuffle-status" class="response-box"></div>
+                </section>
+
+                <section id="seating-arrangement" class="panel-section">
+                    <h2 class="panel-title">Seating Arrangement</h2>
+                    <div id="seating-groups" class="seating-groups"></div>
+                </section>
+            </main>
         </div>
     </div>
 
@@ -285,6 +578,208 @@
 
         const form = document.getElementById('team-registration-form');
         const responseBox = document.getElementById('response-box');
+        const totalTeamsEl = document.getElementById('total-teams');
+        const totalParticipantsEl = document.getElementById('total-participants');
+        const registeredTeamsListEl = document.getElementById('registered-teams-list');
+        const seatingGroupsEl = document.getElementById('seating-groups');
+        const shuffleStatusEl = document.getElementById('shuffle-status');
+
+        document.querySelectorAll('.nav-btn').forEach((button) => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.nav-btn').forEach((nav) => nav.classList.remove('active'));
+                button.classList.add('active');
+                document.querySelectorAll('.panel-section').forEach((section) => {
+                    section.classList.toggle('active', section.id === button.dataset.section);
+                });
+            });
+        });
+
+        function getShuffleEligibility(teams) {
+            const completeTeams = (teams || []).filter((team) => Array.isArray(team.members) && team.members.length === 4);
+            const canShuffle = teams && teams.length === 6 && completeTeams.length === 6;
+            return { canShuffle, completeTeamsCount: completeTeams.length };
+        }
+
+        function updateShuffleButtonState(teams) {
+            const shuffleButton = document.getElementById('shuffle-all-btn');
+            const { canShuffle, completeTeamsCount } = getShuffleEligibility(teams);
+
+            shuffleButton.disabled = !canShuffle;
+            shuffleButton.style.opacity = canShuffle ? '1' : '0.5';
+            shuffleButton.style.cursor = canShuffle ? 'pointer' : 'not-allowed';
+
+            if (!canShuffle) {
+                renderShuffleStatus('Shuffle requires 6 complete teams (24 participants).', 'error');
+            } else {
+                renderShuffleStatus('Ready to shuffle all 6 complete teams.', 'success');
+            }
+
+            if (teams && teams.length !== 6) {
+                renderShuffleStatus(`Shuffle requires 6 complete teams (24 participants). Current teams: ${teams.length}.`, 'error');
+            }
+
+            if (teams && teams.length === 6 && completeTeamsCount !== 6) {
+                renderShuffleStatus(`Shuffle requires 6 complete teams (24 participants). Complete teams: ${completeTeamsCount}/6.`, 'error');
+            }
+        }
+
+        async function loadRegisteredTeams() {
+            try {
+                const response = await fetch('http://localhost:3000/api/registered-teams');
+                const data = await response.json();
+
+                if (!response.ok || !data || data.success !== true) {
+                    registeredTeamsListEl.innerHTML = '<div class="team-card"><strong>Unable to load registered teams.</strong></div>';
+                    return;
+                }
+
+                const teams = data.teams || [];
+                const totalParticipants = teams.reduce((sum, team) => sum + (team.members || []).length, 0);
+
+                totalTeamsEl.textContent = String(teams.length);
+                totalParticipantsEl.textContent = String(totalParticipants);
+
+                if (teams.length === 0) {
+                    registeredTeamsListEl.innerHTML = '<div class="team-card">No real teams registered yet.</div>';
+                    updateShuffleButtonState([]);
+                    return;
+                }
+
+                registeredTeamsListEl.innerHTML = teams.map((team) => {
+                    const memberCount = (team.members || []).length;
+                    const isComplete = memberCount === 4;
+                    const badgeClass = isComplete ? 'complete' : 'incomplete';
+                    const badgeText = isComplete ? '4/4 Members' : `${memberCount}/4 Members`;
+
+                    return `
+                        <div class="team-card ${isComplete ? '' : 'incomplete'}">
+                            <div class="team-card-header">
+                                <span class="team-card-name">${team.team_name}</span>
+                                <span class="team-card-meta">
+                                    <span class="team-card-code">${team.team_code}</span>
+                                    <span class="team-badge ${badgeClass}">${badgeText}</span>
+                                </span>
+                            </div>
+                            <ul class="team-members">
+                                ${(team.members || []).map((member) => `<li>${member}</li>`).join('')}
+                            </ul>
+                            ${isComplete ? '' : '<div class="team-warning">Incomplete Team</div>'}
+                        </div>
+                    `;
+                }).join('');
+
+                updateShuffleButtonState(teams);
+            } catch (error) {
+                registeredTeamsListEl.innerHTML = '<div class="team-card"><strong>Unable to contact the backend.</strong></div>';
+                updateShuffleButtonState([]);
+            }
+        }
+
+        function renderShuffleStatus(message, kind = 'success') {
+            shuffleStatusEl.className = `response-box ${kind === 'success' ? 'success' : 'error'}`;
+            shuffleStatusEl.innerHTML = message;
+            shuffleStatusEl.style.display = 'block';
+        }
+
+        function buildSixGroups(participants) {
+            const groups = Array.from({ length: 6 }, (_, index) => ({
+                groupName: `Group ${index + 1}`,
+                members: []
+            }));
+
+            (participants || []).forEach((participant) => {
+                const text = participant.seating_group || 'Group 1';
+                const match = text.match(/Group\s*(\d+)/i);
+                const groupNumber = match ? Number(match[1]) : null;
+                const safeIndex = groupNumber && groupNumber >= 1 && groupNumber <= 6 ? groupNumber - 1 : 0;
+                if (groups[safeIndex]) {
+                    groups[safeIndex].members.push(participant);
+                }
+            });
+
+            return groups;
+        }
+
+        async function loadSeatingArrangement() {
+            try {
+                const response = await fetch('http://localhost:3000/api/shuffle-layout');
+                const data = await response.json();
+
+                if (!response.ok || !data || data.success !== true) {
+                    seatingGroupsEl.innerHTML = '<div class="team-card">Seating arrangement unavailable.</div>';
+                    return;
+                }
+
+                const groups = buildSixGroups(data.participants || []);
+                seatingGroupsEl.innerHTML = groups.map((group) => {
+                    const members = group.members.length ? group.members : [];
+                    const rows = members.length > 0
+                        ? members.map((participant) => `
+                            <tr>
+                                <td>${participant.participant_name}</td>
+                                <td>${participant.original_team}</td>
+                                <td>${participant.role}</td>
+                            </tr>
+                        `).join('')
+                        : '<tr><td colspan="3">No participants assigned</td></tr>';
+
+                    return `
+                        <div class="group-card">
+                            <h3>${group.groupName}</h3>
+                            <table class="group-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Original Team</th>
+                                        <th>Role</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rows}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                seatingGroupsEl.innerHTML = '<div class="team-card">Unable to fetch seating layout.</div>';
+            }
+        }
+
+        async function triggerShuffle() {
+            const teamData = await fetch('http://localhost:3000/api/registered-teams');
+            const teamPayload = await teamData.json();
+            const teams = teamPayload && teamPayload.success === true ? (teamPayload.teams || []) : [];
+
+            if (teams.length !== 6 || teams.some((team) => (team.members || []).length !== 4)) {
+                renderShuffleStatus('Shuffle requires 6 complete teams (24 participants).', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3000/api/start-shuffle', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data || data.success !== true) {
+                    renderShuffleStatus(data && data.message ? data.message : 'Shuffle failed.', 'error');
+                    return;
+                }
+
+                renderShuffleStatus(`Shuffle completed successfully. ${data.groups_created || 0} groups created.`, 'success');
+                await loadSeatingArrangement();
+            } catch (error) {
+                renderShuffleStatus('Unable to reach the shuffle endpoint.', 'error');
+            }
+        }
+
+        document.getElementById('shuffle-all-btn').addEventListener('click', triggerShuffle);
+        document.getElementById('retry-shuffle-btn').addEventListener('click', triggerShuffle);
 
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -333,6 +828,7 @@
                     responseBox.innerHTML = `Team registered successfully.<br><strong>Team Code:</strong> ${data.team_code}<br>Participants can now authenticate from the homepage using the exact team and participant names.`;
                     responseBox.style.display = 'block';
                     form.reset();
+                    await loadRegisteredTeams();
                     return;
                 }
 
@@ -345,6 +841,9 @@
                 responseBox.style.display = 'block';
             }
         });
+
+        loadRegisteredTeams();
+        loadSeatingArrangement();
     </script>
 </body>
 </html>
