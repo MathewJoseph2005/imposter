@@ -1,0 +1,354 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE IMPOSTER PROJECT | Astra 11.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-black: #08070b;
+            --dark-grey: #16151d;
+            --cherry-red: #c00d2e;
+            --crimson-red: #ff1e43;
+            --violet: #6b21a8;
+            --deep-blue: #0d1b2a;
+            --cyan-accent: #00f0ff;
+            --green-accent: #00ff66;
+            --text-light: #f3f4f6;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Rajdhani',sans-serif; }
+        body { background-color:var(--bg-black); color:var(--text-light); overflow-x:hidden; position:relative; }
+        #space-bg { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:-1; background:radial-gradient(circle at center,#1a0b2e 0%,var(--bg-black) 80%); }
+        header { display:flex; justify-content:space-between; align-items:center; padding:15px 5%; background:rgba(8,7,11,0.85); backdrop-filter:blur(10px); border-bottom:2px solid var(--cherry-red); position:sticky; top:0; z-index:100; }
+        .org-branding { font-family:'Orbitron',sans-serif; font-size:0.9rem; color:#aaa; letter-spacing:1px; }
+        .org-branding span { color:var(--crimson-red); font-weight:bold; }
+        .start-btn { font-family:'Orbitron',sans-serif; background:linear-gradient(90deg,var(--crimson-red),var(--cherry-red)); color:#fff; border:2px solid #000; padding:8px 16px; border-radius:10px; font-weight:900; letter-spacing:1px; cursor:pointer; box-shadow:0 6px 18px rgba(192,13,46,0.25); transition:transform 0.15s ease,box-shadow 0.15s ease; }
+        .start-btn:hover { transform:translateY(-3px); box-shadow:0 10px 26px rgba(255,30,67,0.32); }
+        .start-btn:active { transform:translateY(0); }
+        .hero { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:50px 20px 30px; position:relative; }
+        .title-container { margin-bottom:20px; text-transform:uppercase; }
+        .event-subtitle { font-family:'Orbitron',sans-serif; color:var(--violet); letter-spacing:4px; font-size:1.2rem; margin-bottom:5px; text-shadow:0 0 10px rgba(107,33,168,0.8); }
+        .main-title { font-family:'Orbitron',sans-serif; font-size:clamp(2.5rem,8vw,5rem); font-weight:900; color:var(--crimson-red); text-shadow:0 0 20px rgba(255,30,67,0.6),4px 4px 0px #000; line-height:1; letter-spacing:2px; }
+        .host-dept { font-size:1.2rem; margin-top:15px; letter-spacing:2px; color:#ddd; background:linear-gradient(90deg,transparent,rgba(192,13,46,0.3),transparent); padding:5px 20px; }
+        .container { max-width:1100px; margin:0 auto; padding:20px; display:flex; flex-direction:column; gap:30px; }
+        .panel { background:rgba(22,21,29,0.85); border:2px solid var(--violet); border-radius:12px; padding:25px; box-shadow:0 0 15px rgba(107,33,168,0.3); position:relative; overflow:hidden; backdrop-filter:blur(5px); }
+        .panel::before { content:''; position:absolute; top:0; left:0; width:100%; height:4px; background:linear-gradient(90deg,var(--cherry-red),var(--violet),var(--deep-blue)); }
+        .panel-title { font-family:'Orbitron',sans-serif; color:var(--crimson-red); font-size:1.8rem; margin-bottom:20px; display:flex; align-items:center; gap:10px; }
+        .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:15px; text-align:center; }
+        .stat-card { background:rgba(13,27,42,0.8); border:1px solid var(--cherry-red); border-radius:8px; padding:15px 10px; transition:transform 0.2s; }
+        .stat-card:hover { transform:translateY(-5px); border-color:var(--cyan-accent); }
+        .stat-value { font-family:'Orbitron',sans-serif; font-size:1.5rem; font-weight:bold; color:var(--cyan-accent); }
+        .stat-label { font-size:0.85rem; text-transform:uppercase; color:#aaa; margin-top:5px; }
+        .crewmate-svg { width:35px; height:45px; display:inline-block; vertical-align:middle; }
+        .rules-list { list-style:none; counter-reset:rule-counter; display:flex; flex-direction:column; gap:12px; }
+        .rules-list>li { counter-increment:rule-counter; position:relative; padding-left:35px; font-size:1.1rem; line-height:1.5; color:#e0e0e0; }
+        .rules-list>li::before { content:counter(rule-counter)"."; position:absolute; left:0; top:0; font-family:'Orbitron',sans-serif; font-weight:bold; color:var(--cyan-accent); font-size:1.1rem; }
+        .rules-list ul { list-style-type:disc; margin-top:8px; padding-left:20px; color:#bbb; }
+        .rules-list ul li { margin-bottom:5px; }
+        /* Auth Modal */
+        .modal-overlay { display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(8,7,11,0.85); backdrop-filter:blur(8px); z-index:1000; justify-content:center; align-items:center; }
+        .auth-card { background:var(--dark-grey); border:2px solid var(--crimson-red); border-radius:12px; padding:35px; width:90%; max-width:450px; box-shadow:0 0 25px rgba(255,30,67,0.3); position:relative; }
+        .close-modal { position:absolute; top:10px; right:15px; color:#aaa; font-size:1.5rem; cursor:pointer; font-family:'Orbitron',sans-serif; }
+        .close-modal:hover { color:var(--crimson-red); }
+        .auth-title { font-family:'Orbitron',sans-serif; font-size:1.5rem; font-weight:900; color:var(--crimson-red); text-align:center; letter-spacing:2px; margin-bottom:20px; }
+        .input-group { display:flex; flex-direction:column; gap:8px; margin-bottom:20px; }
+        .input-group label { font-family:'Orbitron',sans-serif; font-size:0.85rem; color:#ccc; letter-spacing:1px; }
+        .auth-input { width:100%; background:rgba(8,7,11,0.9); border:1px solid var(--violet); border-radius:6px; padding:12px 15px; color:#fff; font-size:1rem; outline:none; transition:border-color 0.2s,box-shadow 0.2s; }
+        .auth-input:focus { border-color:var(--cyan-accent); box-shadow:0 0 10px rgba(0,240,255,0.4); }
+        .submit-auth-btn { width:100%; background:linear-gradient(90deg,var(--crimson-red),var(--cherry-red)); color:#fff; font-family:'Orbitron',sans-serif; font-size:1rem; font-weight:900; padding:12px; border:none; border-radius:50px; cursor:pointer; letter-spacing:2px; box-shadow:0 0 15px rgba(255,30,67,0.4); transition:transform 0.2s ease,opacity 0.2s ease; }
+        .submit-auth-btn:hover { transform:scale(1.02); }
+        .submit-auth-btn:disabled { opacity:0.55; cursor:not-allowed; transform:none; }
+        /* Response messages */
+        .response-box     { display:none; margin-top:15px; padding:12px; border-radius:6px; font-family:'Orbitron',sans-serif; text-align:center; font-size:0.82rem; line-height:1.5; }
+        .response-error   { background:rgba(255,30,67,0.1);  border:1px solid rgba(255,30,67,0.45);  color:#ffbfd0; }
+        .response-warning { background:rgba(255,190,0,0.08); border:1px solid rgba(255,190,0,0.4);   color:#ffe99a; }
+        /* Footer */
+        footer { margin-top:40px; background:var(--dark-grey); border-top:1px solid var(--violet); padding:20px 5%; text-align:center; }
+        .coordinators { display:flex; justify-content:center; gap:40px; flex-wrap:wrap; margin-top:10px; }
+        .coord-card { font-size:1rem; color:#ddd; }
+        .coord-card strong { color:var(--crimson-red); }
+        /* Emergency */
+        .emergency-btn { position:fixed; bottom:20px; right:20px; background:#ff0000; color:white; border:3px solid #000; border-radius:50px; padding:12px 20px; font-family:'Orbitron',sans-serif; font-weight:900; cursor:pointer; box-shadow:0 0 15px rgba(255,0,0,0.8); animation:emergencyPulse 1.5s infinite; z-index:99; }
+        @keyframes emergencyPulse { 0%{transform:scale(1)} 50%{transform:scale(1.08)} 100%{transform:scale(1)} }
+        /* Role Reveal */
+        #role-reveal { display:none; position:fixed; inset:0; z-index:2000; justify-content:center; align-items:center; flex-direction:column; text-align:center; padding:30px 20px; }
+        #role-reveal.active { display:flex; animation:revealFadeIn 0.45s ease both; }
+        @keyframes revealFadeIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+        #role-reveal::before { content:''; position:absolute; inset:0; background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.08) 3px,rgba(0,0,0,0.08) 4px); pointer-events:none; z-index:0; }
+        #role-reveal>* { position:relative; z-index:1; }
+        #role-reveal.imposter  { background:radial-gradient(ellipse at center,#2e0008 0%,#0a0003 100%); }
+        #role-reveal.specialist { background:radial-gradient(ellipse at center,#001f0a 0%,#000d04 100%); }
+        .reveal-icon { font-size:5.5rem; margin-bottom:16px; line-height:1; animation:iconPop 0.55s cubic-bezier(0.34,1.56,0.64,1) 0.15s both; }
+        @keyframes iconPop { from{transform:scale(0.3);opacity:0} to{transform:scale(1);opacity:1} }
+        .reveal-role-label { font-family:'Orbitron',sans-serif; font-size:clamp(1.7rem,6vw,3.2rem); font-weight:900; letter-spacing:3px; text-transform:uppercase; line-height:1.15; margin-bottom:22px; animation:textSlideUp 0.4s ease 0.3s both; }
+        @keyframes textSlideUp { from{transform:translateY(18px);opacity:0} to{transform:translateY(0);opacity:1} }
+        #role-reveal.imposter  .reveal-role-label { color:#ff1e43; text-shadow:0 0 20px rgba(255,30,67,1),0 0 50px rgba(255,30,67,0.55),0 0 100px rgba(255,30,67,0.25); }
+        #role-reveal.specialist .reveal-role-label { color:#00ff66; text-shadow:0 0 20px rgba(0,255,102,1),0 0 50px rgba(0,255,102,0.55),0 0 100px rgba(0,255,102,0.25); }
+        .reveal-warning { font-family:'Orbitron',sans-serif; font-size:clamp(0.7rem,2vw,0.9rem); letter-spacing:2px; text-transform:uppercase; padding:10px 24px; border-radius:8px; margin-bottom:40px; animation:textSlideUp 0.4s ease 0.45s both; }
+        #role-reveal.imposter  .reveal-warning { color:#ffbfd0; background:rgba(255,30,67,0.1);   border:1px solid rgba(255,30,67,0.35); }
+        #role-reveal.specialist .reveal-warning { color:#b5f5d5; background:rgba(0,255,102,0.07); border:1px solid rgba(0,255,102,0.3); }
+        .reveal-actions { display:flex; flex-direction:column; align-items:center; gap:14px; animation:textSlideUp 0.4s ease 0.55s both; }
+        .reveal-continue-btn { font-family:'Orbitron',sans-serif; font-size:0.85rem; font-weight:800; letter-spacing:2px; text-transform:uppercase; padding:13px 40px; border-radius:50px; border:none; cursor:pointer; transition:transform 0.15s ease,box-shadow 0.15s ease; }
+        #role-reveal.imposter  .reveal-continue-btn { background:linear-gradient(90deg,#c00d2e,#ff1e43); color:#fff; box-shadow:0 0 20px rgba(255,30,67,0.5); }
+        #role-reveal.specialist .reveal-continue-btn { background:linear-gradient(90deg,#00a83a,#00ff66); color:#001a09; box-shadow:0 0 20px rgba(0,255,102,0.45); }
+        .reveal-continue-btn:hover { transform:translateY(-2px) scale(1.04); }
+        .reveal-countdown { font-family:'Orbitron',sans-serif; font-size:0.78rem; letter-spacing:2px; color:rgba(255,255,255,0.38); text-transform:uppercase; }
+    </style>
+</head>
+<body>
+
+    <canvas id="space-bg"></canvas>
+
+    <header>
+        <div class="org-branding">ST. JOSEPH'S COLLEGE OF ENG. &amp; TECH. | <span>ASTRA 11.0</span></div>
+        <button class="start-btn" onclick="openAuthModal()">START</button>
+    </header>
+
+    <section class="hero">
+        <div class="title-container">
+            <div class="event-subtitle">Department of Computer Science &amp; Engineering</div>
+            <h1 class="main-title">THE IMPOSTER<br>PROJECT</h1>
+        </div>
+        <div class="host-dept">THERE IS 1 IMPOSTER AMONG US. CAN YOUR TEAM FIND IT?</div>
+    </section>
+
+    <div class="container">
+        <div class="panel">
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-value">18 SEP</div><div class="stat-label">SEPTEMBER 2026</div></div>
+                <div class="stat-card"><div class="stat-value">10:00 AM</div><div class="stat-label">TO 1:00 PM</div></div>
+                <div class="stat-card"><div class="stat-value">PROG LAB 2</div><div class="stat-label">VENUE: ECE DEPT</div></div>
+                <div class="stat-card"><div class="stat-value">&#8377;300</div><div class="stat-label">REG FEE / TEAM</div></div>
+                <div class="stat-card"><div class="stat-value">4</div><div class="stat-label">MEMBERS</div></div>
+            </div>
+        </div>
+        <div class="panel">
+            <h2 class="panel-title">
+                <svg class="crewmate-svg" viewBox="0 0 100 120">
+                    <rect x="25" y="20" width="50" height="75" rx="25" fill="#c00d2e" stroke="#000" stroke-width="5"/>
+                    <ellipse cx="65" cy="45" rx="18" ry="12" fill="#00f0ff" stroke="#000" stroke-width="5"/>
+                    <rect x="15" y="45" width="12" height="35" rx="5" fill="#a00a24" stroke="#000" stroke-width="5"/>
+                </svg>
+                RULES
+            </h2>
+            <ol class="rules-list">
+                <li>Each team must consist of <strong>4 participants</strong>.</li>
+                <li>All team members will receive the <strong>main problem statement</strong>, while one randomly selected member will secretly receive an <strong>additional/different objective</strong>.</li>
+                <li>The impostor must not openly reveal their identity or objective.</li>
+                <li>Teams must develop a functional solution within the given time limit.</li>
+                <li>Participants may discuss, plan, and divide tasks freely within their team.</li>
+                <li>The use of <strong>AI tools, internet resources, and pre-existing code</strong> will be allowed/restricted according to the event coordinator's guidelines.</li>
+                <li>Teams will have designated <strong>checkpoints</strong> where they may discuss their progress and identify the suspected impostor.</li>
+                <li>The <strong>impostor receives points</strong> for successfully influencing the team's outcome without being detected.</li>
+                <li>The <strong>team receives points</strong> based on:
+                    <ul>
+                        <li>The quality of the technical solution.</li>
+                        <li>Correct identification of the impostor.</li>
+                    </ul>
+                </li>
+                <li>Any attempt to <strong>communicate the secret objective</strong> to another team or deliberately violate the event rules may result in <strong>disqualification</strong>.</li>
+                <li><strong>Judges' decisions will be final.</strong></li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal-overlay">
+        <div class="auth-card">
+            <span class="close-modal" onclick="closeAuthModal()">&times;</span>
+            <h2 class="auth-title">IDENTITY CHECK</h2>
+            <form id="auth-form" onsubmit="authenticateUser(event)">
+                <div class="input-group">
+                    <label for="participant-name">PARTICIPANT NAME</label>
+                    <input type="text" id="participant-name" class="auth-input" placeholder="Enter Full Name" required autocomplete="off">
+                </div>
+                <div class="input-group">
+                    <label for="team-name">TEAM NAME</label>
+                    <input type="text" id="team-name" class="auth-input" placeholder="Enter Team Name" required autocomplete="off">
+                </div>
+                <button type="submit" id="auth-submit-btn" class="submit-auth-btn">SUBMIT</button>
+            </form>
+            <div id="response-box" class="response-box"></div>
+        </div>
+    </div>
+
+    <!-- Role Reveal Full-Screen Overlay -->
+    <div id="role-reveal">
+        <div class="reveal-icon" id="reveal-icon"></div>
+        <div class="reveal-role-label" id="reveal-role-label"></div>
+        <div class="reveal-warning" id="reveal-warning"></div>
+        <div class="reveal-actions">
+            <button class="reveal-continue-btn" id="reveal-continue-btn" onclick="proceedToEvent()">CONTINUE</button>
+            <div class="reveal-countdown" id="reveal-countdown">Redirecting in 5...</div>
+        </div>
+    </div>
+
+    <footer>
+        <p style="color:#888;font-family:'Orbitron',sans-serif;">STUDENT COORDINATORS</p>
+        <div class="coordinators">
+            <div class="coord-card">Aleena Maria Jude: <strong>+91 7306697611</strong></div>
+            <div class="coord-card">Alfred George: <strong>+91 7012221919</strong></div>
+        </div>
+    </footer>
+
+    <button class="emergency-btn" onclick="triggerEmergency()">EMERGENCY</button>
+
+    <script>
+        // Space canvas background
+        var canvas = document.getElementById('space-bg');
+        var ctx = canvas.getContext('2d');
+        function resizeCanvas() {
+            canvas.width  = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        var stars = [];
+        var starColors = ['#ffffff', '#ff1e43', '#00f0ff', '#6b21a8'];
+        for (var i = 0; i < 150; i++) {
+            stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, radius: Math.random()*1.8, color: starColors[Math.floor(Math.random()*starColors.length)], speed: Math.random()*0.5+0.1 });
+        }
+        function animateSpace() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            stars.forEach(function(s) {
+                ctx.beginPath(); ctx.arc(s.x, s.y, s.radius, 0, Math.PI*2); ctx.fillStyle = s.color; ctx.fill();
+                s.y += s.speed;
+                if (s.y > canvas.height) { s.y = 0; s.x = Math.random()*canvas.width; }
+            });
+            requestAnimationFrame(animateSpace);
+        }
+        animateSpace();
+
+        // Auth modal
+        function openAuthModal() {
+            document.getElementById('auth-modal').style.display = 'flex';
+            var rb = document.getElementById('response-box');
+            rb.style.display = 'none';
+            rb.className = 'response-box';
+            rb.textContent = '';
+        }
+        function closeAuthModal() {
+            document.getElementById('auth-modal').style.display = 'none';
+        }
+
+        // Role reveal
+        var revealTimer = null;
+
+        function showRoleReveal(role) {
+            var overlay   = document.getElementById('role-reveal');
+            var icon      = document.getElementById('reveal-icon');
+            var label     = document.getElementById('reveal-role-label');
+            var warning   = document.getElementById('reveal-warning');
+            var countdown = document.getElementById('reveal-countdown');
+            var isImposter = (role === 'Imposter');
+
+            overlay.className = isImposter ? 'active imposter' : 'active specialist';
+
+            if (isImposter) {
+                icon.textContent    = '\uD83D\uDD34';
+                label.textContent   = 'YOU ARE THE IMPOSTER';
+                warning.textContent = '\u26A0\uFE0F  Do not reveal this to anyone.';
+            } else {
+                icon.textContent    = '\uD83D\uDFE2';
+                label.textContent   = 'YOU ARE A SPECIALIST';
+                warning.textContent = '\uD83D\uDD0D  Find the Imposter in your group.';
+            }
+
+            var secondsLeft = 5;
+            countdown.textContent = 'Redirecting in ' + secondsLeft + '...';
+
+            revealTimer = setInterval(function() {
+                secondsLeft -= 1;
+                if (secondsLeft <= 0) {
+                    clearInterval(revealTimer);
+                    revealTimer = null;
+                    countdown.textContent = 'Redirecting...';
+                    proceedToEvent();
+                } else {
+                    countdown.textContent = 'Redirecting in ' + secondsLeft + '...';
+                }
+            }, 1000);
+        }
+
+        function proceedToEvent() {
+            if (revealTimer) { clearInterval(revealTimer); revealTimer = null; }
+            window.location.href = 'main_event_page.html';
+        }
+
+        // Authentication
+        async function authenticateUser(event) {
+            event.preventDefault();
+
+            var name      = document.getElementById('participant-name').value.trim();
+            var team_name = document.getElementById('team-name').value.trim();
+            var resBox    = document.getElementById('response-box');
+            var submitBtn = document.getElementById('auth-submit-btn');
+
+            resBox.style.display  = 'none';
+            submitBtn.disabled    = true;
+            submitBtn.textContent = 'VERIFYING...';
+
+            try {
+                var response = await fetch('http://localhost:3000/api/authenticate', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ name: name, team_name: team_name })
+                });
+
+                var data = await response.json();
+
+                // Success: show role reveal
+                if (response.ok && data && data.success === true) {
+                    var user = data.user || {};
+                    // Persist only what the event page needs — never store group or seating info
+                    if (user.team_code) {
+                        sessionStorage.setItem('imposterTeamCode', user.team_code);
+                        localStorage.setItem('imposterTeamCode',   user.team_code);
+                    }
+                    if (user.team_name) {
+                        sessionStorage.setItem('imposterTeamName', user.team_name);
+                        localStorage.setItem('imposterTeamName',   user.team_name);
+                    }
+                    sessionStorage.setItem('imposterParticipant', JSON.stringify(user));
+                    closeAuthModal();
+                    showRoleReveal(user.role);
+                    return;
+                }
+
+                // 403: shuffle not run yet — event has not started
+                if (response.status === 403) {
+                    var waitMsg = (data && data.message) ? data.message : 'The event has not started yet. Please wait for the coordinator.';
+                    resBox.className     = 'response-box response-warning';
+                    resBox.textContent   = waitMsg;
+                    resBox.style.display = 'block';
+                    return;
+                }
+
+                // 404 / other: invalid credentials
+                var errMsg = (data && data.message) ? data.message : 'Invalid Team or Participant Name.';
+                resBox.className     = 'response-box response-error';
+                resBox.textContent   = errMsg;
+                resBox.style.display = 'block';
+
+            } catch (err) {
+                resBox.className     = 'response-box response-error';
+                resBox.textContent   = 'Unable to reach the server. Make sure the backend is running on localhost:3000.';
+                resBox.style.display = 'block';
+            } finally {
+                submitBtn.disabled    = false;
+                submitBtn.textContent = 'SUBMIT';
+            }
+        }
+
+        // Emergency
+        function triggerEmergency() {
+            document.body.style.backgroundColor = 'red';
+            setTimeout(function() {
+                document.body.style.backgroundColor = 'var(--bg-black)';
+                alert('EMERGENCY MEETING CALLED!\nCheck Programming Lab 2 for Impostors before time runs out!');
+            }, 200);
+        }
+    </script>
+</body>
+</html>
