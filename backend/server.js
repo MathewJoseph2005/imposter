@@ -189,6 +189,30 @@ app.get('/api/shuffle-layout', async (req, res) => {
       return res.status(500).json({ success: false, message: participantsError.message });
     }
 
+    // Validate: must have exactly 6 complete teams with 24 participants total
+    const completeTeams = (teams || []).filter((team) => {
+      const memberCount = (participants || []).filter((p) => p.team_id === team.id).length;
+      return memberCount === 4;
+    });
+
+    if (!teams || teams.length !== 6 || completeTeams.length !== 6 || (participants || []).length !== 24) {
+      return res.status(200).json({
+        success: true,
+        participants: [],
+        seating_ready: false
+      });
+    }
+
+    // Check that shuffle has actually been run (all participants have a shuffle_group assigned)
+    const shuffled = (participants || []).every((p) => p.shuffle_group && p.shuffle_group !== 'Unassigned');
+    if (!shuffled) {
+      return res.status(200).json({
+        success: true,
+        participants: [],
+        seating_ready: false
+      });
+    }
+
     const teamMap = {};
     (teams || []).forEach((team) => {
       teamMap[team.id] = team.team_name;
@@ -198,13 +222,14 @@ app.get('/api/shuffle-layout', async (req, res) => {
       id: participant.id,
       participant_name: participant.participant_name,
       original_team: teamMap[participant.team_id] || 'Unknown Team',
-      seating_group: participant.shuffle_group || 'Unassigned',
-      role: participant.player_role || (participant.is_imposter ? 'Imposter' : 'Crewmate')
+      seating_group: participant.shuffle_group,
+      role: participant.player_role || (participant.is_imposter ? 'Imposter' : 'Specialist')
     }));
 
     return res.status(200).json({
       success: true,
-      participants: seatRows
+      participants: seatRows,
+      seating_ready: true
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message || 'Unable to fetch seating layout.' });
@@ -225,7 +250,7 @@ app.post('/api/authenticate', async (req, res) => {
 
     const { data: teamData, error: teamError } = await supabase
       .from('teams')
-      .select('*')
+      .select('id, team_name, team_code')
       .eq('team_name', team_name)
       .maybeSingle();
 
@@ -236,13 +261,14 @@ app.post('/api/authenticate', async (req, res) => {
     if (!teamData) {
       return res.status(404).json({
         success: false,
-        message: 'Team not found.'
+        message: 'Invalid Team or Participant Name.'
       });
     }
 
+    // Only select the fields needed — never expose group, original team mapping, or teammates
     const { data: participantData, error: participantError } = await supabase
       .from('participants')
-      .select('*')
+      .select('id, participant_name, player_role, shuffle_group')
       .eq('team_id', teamData.id)
       .eq('participant_name', name)
       .maybeSingle();
@@ -254,10 +280,22 @@ app.post('/api/authenticate', async (req, res) => {
     if (!participantData) {
       return res.status(404).json({
         success: false,
-        message: 'Participant not found for this team.'
+        message: 'Invalid Team or Participant Name.'
       });
     }
 
+    // Require shuffle to have been run before login is allowed
+    if (!participantData.player_role || !participantData.shuffle_group) {
+      return res.status(403).json({
+        success: false,
+        message: 'The event has not started yet. Please wait for the coordinator to run the shuffle.'
+      });
+    }
+
+    // Normalise role: treat any non-Imposter role as Specialist
+    const role = participantData.player_role === 'Imposter' ? 'Imposter' : 'Specialist';
+
+    // Return only what the participant needs — no group number, no team mapping
     return res.status(200).json({
       success: true,
       message: 'Authentication successful.',
@@ -266,8 +304,7 @@ app.post('/api/authenticate', async (req, res) => {
         name: participantData.participant_name,
         team_name: teamData.team_name,
         team_code: teamData.team_code,
-        shuffle_group: participantData.shuffle_group || null,
-        role: participantData.player_role || null
+        role: role
       }
     });
   } catch (error) {
@@ -391,7 +428,7 @@ app.post('/api/start-shuffle', async (req, res) => {
           id: member.id,
           is_imposter: member.id === group.imposter.id,
           shuffle_group: group.groupName,
-          player_role: member.id === group.imposter.id ? 'Imposter' : 'Crewmate'
+          player_role: member.id === group.imposter.id ? 'Imposter' : 'Specialist'
         });
       });
     });
