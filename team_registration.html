@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Registration | Imposter</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap');
+
+        :root {
+            --bg-black: #050816;
+            --panel: rgba(11, 18, 35, 0.9);
+            --panel-border: rgba(92, 170, 255, 0.35);
+            --text: #eaf6ff;
+            --muted: #9db5d3;
+            --accent: #00f0ff;
+            --accent-2: #ff1e43;
+            --success: #55e6a5;
+            --error: #ff4d6d;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--bg-black);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        #space-bg {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            z-index: 0;
+            background: radial-gradient(circle at top, rgba(11, 19, 39, 0.9), rgba(4, 6, 16, 1));
+        }
+
+        .page-shell {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 16px;
+        }
+
+        .registration-card {
+            width: min(720px, 100%);
+            background: rgba(10, 18, 35, 0.88);
+            border: 1px solid var(--panel-border);
+            border-radius: 24px;
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.18);
+            padding: 30px 28px 18px;
+            backdrop-filter: blur(8px);
+        }
+
+        .brand {
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.22em;
+            text-align: center;
+            color: var(--accent);
+            font-size: clamp(1.5rem, 2.5vw, 2.5rem);
+            margin: 0 0 12px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--muted);
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            font-size: 0.78rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px 18px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .field.full {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-size: 0.72rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(158, 178, 214, 0.4);
+            background: rgba(14, 21, 36, 0.9);
+            color: var(--text);
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.12);
+        }
+
+        .button-row {
+            display: flex;
+            justify-content: center;
+            margin-top: 26px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .submit-btn, .secondary-btn {
+            border: none;
+            border-radius: 12px;
+            padding: 14px 26px;
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, var(--accent), #4b8cff);
+            color: #00131a;
+            font-weight: 800;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
+        }
+
+        .secondary-btn {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .submit-btn:hover, .secondary-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .response-box {
+            display: none;
+            margin-top: 22px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+
+        .response-box.success {
+            display: block;
+            background: rgba(85, 230, 165, 0.12);
+            border: 1px solid rgba(85, 230, 165, 0.4);
+            color: #b5f5d5;
+        }
+
+        .response-box.error {
+            display: block;
+            background: rgba(255, 77, 109, 0.12);
+            border: 1px solid rgba(255, 77, 109, 0.35);
+            color: #ffbfd0;
+        }
+
+        .note {
+            color: var(--muted);
+            font-size: 0.88rem;
+            text-align: center;
+            margin-top: 16px;
+        }
+
+        @media (max-width: 640px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .registration-card { padding: 22px 18px; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="space-bg"></canvas>
+
+    <div class="page-shell">
+        <div class="registration-card">
+            <h1 class="brand">Imposter</h1>
+            <div class="subtitle">Team Registration for Coordinators</div>
+
+            <form id="team-registration-form">
+                <div class="form-grid">
+                    <div class="field full">
+                        <label for="team-name">Team Name</label>
+                        <input id="team-name" name="team_name" type="text" placeholder="Enter team name" required>
+                    </div>
+
+                    <div class="field full">
+                        <label for="member-1">Participant 1</label>
+                        <input id="member-1" name="member_1" type="text" placeholder="Full name" required>
+                    </div>
+
+                    <div class="field">
+                        <label for="member-2">Participant 2</label>
+                        <input id="member-2" name="member_2" type="text" placeholder="Full name" required>
+                    </div>
+
+                    <div class="field">
+                        <label for="member-3">Participant 3</label>
+                        <input id="member-3" name="member_3" type="text" placeholder="Full name" required>
+                    </div>
+
+                    <div class="field">
+                        <label for="member-4">Participant 4</label>
+                        <input id="member-4" name="member_4" type="text" placeholder="Full name" required>
+                    </div>
+                </div>
+
+                <div class="button-row">
+                    <button type="submit" class="submit-btn">Register Team</button>
+                    <button type="button" class="secondary-btn" onclick="window.location.href='homepage.html'">Return to Login</button>
+                </div>
+            </form>
+
+            <div id="response-box" class="response-box"></div>
+
+            <p class="note">After registration, participants can sign in from the main homepage using their exact names and the team name.</p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('space-bg');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        const stars = [];
+        const colors = ['#ffffff', '#00f0ff', '#ff1e43', '#6b21a8'];
+
+        for (let i = 0; i < 140; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                radius: Math.random() * 2,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                speed: Math.random() * 0.6 + 0.2
+            });
+        }
+
+        function animateSpace() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            stars.forEach(star => {
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                ctx.fillStyle = star.color;
+                ctx.fill();
+
+                star.y += star.speed;
+                if (star.y > canvas.height) {
+                    star.y = 0;
+                    star.x = Math.random() * canvas.width;
+                }
+            });
+            requestAnimationFrame(animateSpace);
+        }
+        animateSpace();
+
+        const form = document.getElementById('team-registration-form');
+        const responseBox = document.getElementById('response-box');
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const teamName = document.getElementById('team-name').value.trim();
+            const members = [
+                document.getElementById('member-1').value,
+                document.getElementById('member-2').value,
+                document.getElementById('member-3').value,
+                document.getElementById('member-4').value
+            ].map((value) => value.trim()).filter(Boolean);
+
+            responseBox.className = 'response-box';
+            responseBox.style.display = 'none';
+
+            if (!teamName) {
+                responseBox.className = 'response-box error';
+                responseBox.innerHTML = 'Please enter a team name.';
+                responseBox.style.display = 'block';
+                return;
+            }
+
+            if (members.length !== 4) {
+                responseBox.className = 'response-box error';
+                responseBox.innerHTML = 'Exactly 4 participant names are required.';
+                responseBox.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3000/api/register-team', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        team_name: teamName,
+                        members: members
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data && data.success === true) {
+                    responseBox.className = 'response-box success';
+                    responseBox.innerHTML = `Team registered successfully.<br><strong>Team Code:</strong> ${data.team_code}<br>Participants can now authenticate from the homepage using the exact team and participant names.`;
+                    responseBox.style.display = 'block';
+                    form.reset();
+                    return;
+                }
+
+                responseBox.className = 'response-box error';
+                responseBox.innerHTML = data && data.message ? data.message : 'Team registration failed.';
+                responseBox.style.display = 'block';
+            } catch (error) {
+                responseBox.className = 'response-box error';
+                responseBox.innerHTML = 'Unable to reach the registration server. Make sure the backend is running on localhost:3000.';
+                responseBox.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
