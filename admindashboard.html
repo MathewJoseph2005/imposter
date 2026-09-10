@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MASTER ADMIN CONTROL | ASTRA 11.0</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkblack: '#06050a',
+                        charcoal: '#121018',
+                        cardgray: '#1a1724',
+                        bordergray: '#2d263d',
+                        crimson: {
+                            500: '#ff1e43',
+                            600: '#c00d2e',
+                            700: '#9e0b24',
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        rajdhani: ['Rajdhani', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-darkblack text-gray-100 font-rajdhani flex h-screen overflow-hidden">
+
+    <!-- Sidebar Navigation -->
+    <aside class="w-72 bg-charcoal border-r border-bordergray flex flex-col z-20">
+        <div class="p-6 border-b border-bordergray">
+            <h1 class="text-lg font-orbitron font-bold tracking-wider text-crimson-500">ASTRA 11.0</h1>
+            <p class="text-xs text-gray-400 mt-1 font-orbitron">Master Admin Control</p>
+        </div>
+        
+        <nav class="flex-1 p-4 space-y-1.5 overflow-y-auto font-orbitron text-xs">
+            <button onclick="switchTab('overview')" id="nav-overview" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all bg-crimson-600 text-white shadow-lg shadow-crimson-600/30">
+                📊 Overview & Event Headings
+            </button>
+            <button onclick="switchTab('submissions')" id="nav-submissions" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardgray hover:text-gray-200">
+                👥 Participants & Shuffling Grading
+            </button>
+            <button onclick="switchTab('leaderboard')" id="nav-leaderboard" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardgray hover:text-gray-200">
+                🏆 Original Team Podium (1st, 2nd, 3rd)
+            </button>
+            <button onclick="switchTab('visibility')" id="nav-visibility" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardgray hover:text-gray-200">
+                👁️ Event Flow & Gating Toggle
+            </button>
+        </nav>
+
+        <div class="p-4 border-t border-bordergray bg-black/50 text-xs font-orbitron">
+            <div class="flex items-center justify-between text-gray-400 mb-1">
+                <span>Active Modules Status</span>
+                <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            </div>
+            <div id="sidebar-active-event" class="text-crimson-500 font-bold truncate">Imposter Project (Open)</div>
+        </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex flex-col overflow-y-auto">
+        
+        <!-- Header -->
+        <header class="h-20 border-b border-bordergray bg-charcoal/90 backdrop-blur px-8 flex items-center justify-between sticky top-0 z-10">
+            <h2 id="header-title" class="text-xl font-orbitron font-bold tracking-wide text-gray-200 uppercase">Overview & Accordion Preview</h2>
+            <div id="sequence-badge" class="px-4 py-1.5 rounded-full text-xs font-orbitron font-semibold flex items-center gap-2 bg-crimson-600/20 text-rose-400 border border-crimson-600/40">
+                🔒 AI-Only (Imposter/FizzBuzz) & Manual-Only (Code/Sherlock/Drawing)
+            </div>
+        </header>
+
+        <!-- Dynamic Content Area -->
+        <div class="p-8 max-w-7xl mx-auto w-full space-y-6">
+
+            <!-- TAB 1: OVERVIEW WITH SORTED EVENT HEADINGS & TEAMS -->
+            <div id="tab-overview" class="tab-content grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                
+                <!-- Left 2 Columns: Sorted Event Headings & Team Hierarchies -->
+                <div class="lg:col-span-2 space-y-8" id="overview-events-container">
+                    <!-- Injected dynamically via JS -->
+                </div>
+
+                <!-- Right Column: Accordion Style Side Preview Panel -->
+                <div class="space-y-4 sticky top-28">
+                    <div class="bg-cardgray border border-bordergray rounded-2xl p-4 shadow-2xl space-y-3 font-orbitron">
+                        <div class="border-b border-bordergray pb-2 flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-crimson-500 uppercase tracking-widest">Conditions Preview</h3>
+                            <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        </div>
+
+                        <!-- Accordion Item 1: Active Event Gating Status -->
+                        <div class="border-b border-bordergray pb-2">
+                            <button onclick="toggleAccordion('acc-1')" class="w-full flex items-center justify-between py-2 text-xs text-gray-200 hover:text-crimson-500 transition-colors">
+                                <span>Event Gating Status</span>
+                                <span id="icon-acc-1" class="text-crimson-500 font-bold">▲</span>
+                            </button>
+                            <div id="content-acc-1" class="pt-1 pb-2 text-xs font-rajdhani text-cyan-400 bg-black/40 p-2.5 rounded-lg border border-bordergray space-y-1">
+                                <div id="preview-active-gating">Loading gating...</div>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Item 2: Team Prize Standings -->
+                        <div class="border-b border-bordergray pb-2">
+                            <button onclick="toggleAccordion('acc-2')" class="w-full flex items-center justify-between py-2 text-xs text-gray-200 hover:text-crimson-500 transition-colors">
+                                <span>Team Prize Standings</span>
+                                <span id="icon-acc-2" class="text-crimson-500 font-bold">▼</span>
+                            </button>
+                            <div id="content-acc-2" class="hidden pt-1 pb-2 text-xs font-mono bg-black/40 p-2.5 rounded-lg border border-bordergray space-y-1.5">
+                                <div id="preview-team-standings">Loading standings...</div>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Item 3: Shuffling & Grading Rule -->
+                        <div class="border-b border-bordergray pb-2">
+                            <button onclick="toggleAccordion('acc-3')" class="w-full flex items-center justify-between py-2 text-xs text-gray-200 hover:text-crimson-500 transition-colors">
+                                <span>Grading Rules per Module</span>
+                                <span id="icon-acc-3" class="text-crimson-500 font-bold">▼</span>
+                            </button>
+                            <div id="content-acc-3" class="hidden pt-1 pb-2 text-xs font-rajdhani text-gray-300 bg-black/40 p-2.5 rounded-lg border border-bordergray space-y-1.5">
+                                <div>• <strong>Imposter & FizzBuzz:</strong> AI-Only Marks</div>
+                                <div>• <strong>Code, Sherlock & Drawing:</strong> Manual Jury-Only Marks</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- TAB 2: PARTICIPANTS & GRADING -->
+            <div id="tab-submissions" class="tab-content hidden space-y-8">
+                <div class="bg-cardgray border border-bordergray p-6 rounded-2xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-base font-orbitron font-bold text-white">Participants & Shuffling Grading Panel</h3>
+                        <p class="text-sm text-gray-400 mt-1">Sorted by Event Headings, then Teams, adapting input fields dynamically based on AI-Only or Manual-Only rules.</p>
+                    </div>
+                    <button onclick="openManualModal()" class="bg-crimson-600 hover:bg-crimson-700 text-white font-orbitron text-xs px-5 py-3 rounded-xl font-bold transition-all shadow-lg shadow-crimson-600/30 whitespace-nowrap">+ Add Participant Record</button>
+                </div>
+
+                <!-- Event Headings Container -->
+                <div id="grading-events-container" class="space-y-8">
+                    <!-- Injected dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- TAB 3: ORIGINAL TEAM PODIUM (1ST, 2ND, 3RD) -->
+            <div id="tab-leaderboard" class="tab-content hidden space-y-6">
+                <div class="text-center max-w-xl mx-auto space-y-2">
+                    <h3 class="text-2xl font-orbitron font-bold text-white tracking-widest">ORIGINAL TEAM PRIZE PODIUM</h3>
+                    <p class="text-sm text-gray-400 font-orbitron">Final prizes distributed to registered teams based on aggregated scores (Max 500 across all 5 events).</p>
+                </div>
+
+                <div id="podium-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+                    <!-- Injected via JS -->
+                </div>
+            </div>
+
+            <!-- TAB 4: EVENT FLOW & GATING TOGGLE -->
+            <div id="tab-visibility" class="tab-content hidden space-y-6">
+                <div class="bg-cardgray border border-bordergray rounded-2xl p-8 max-w-2xl shadow-xl space-y-6">
+                    <div>
+                        <h3 class="text-lg font-orbitron font-bold text-white mb-2">Event Flow & Instant Gating Toggles</h3>
+                        <p class="text-sm text-gray-400">Toggle switches instantly open or restrict access to each event module for participants.</p>
+                    </div>
+
+                    <div class="space-y-4" id="event-gating-list">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- MANUAL ADD/EDIT PARTICIPANT RECORD MODAL -->
+    <div id="manual-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-cardgray border border-bordergray rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <h3 class="text-lg font-orbitron font-bold text-white" id="modal-title-text">Add / Edit Shuffled Participant</h3>
+            <div class="space-y-3 font-rajdhani text-sm">
+                <div>
+                    <label class="block text-xs font-orbitron text-gray-400 mb-1">Participant Name</label>
+                    <input type="text" id="manual-participant-name" placeholder="e.g. Arpitha Bose" class="w-full bg-black border border-bordergray rounded-xl px-3 py-2 text-white focus:outline-none focus:border-crimson-500 text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-orbitron text-gray-400 mb-1">Pre-Shuffled Team</label>
+                    <select id="manual-original-team" class="w-full bg-black border border-bordergray rounded-xl px-3 py-2 text-white focus:outline-none focus:border-crimson-500 font-orbitron text-xs">
+                        <option value="Team 1">Team 1</option>
+                        <option value="Team 2">Team 2</option>
+                        <option value="Team 3">Team 3</option>
+                        <option value="Team 4">Team 4</option>
+                        <option value="Team 5">Team 5</option>
+                        <option value="Team 6">Team 6</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-orbitron text-gray-400 mb-1">Event Module</label>
+                    <select id="manual-event" onchange="handleEventTypeChange()" class="w-full bg-black border border-bordergray rounded-xl px-3 py-2 text-white focus:outline-none focus:border-crimson-500 font-orbitron text-xs">
+                        <option value="Imposter Project">Imposter Project (AI-Only)</option>
+                        <option value="FizzBuzz">FizzBuzz (AI-Only)</option>
+                        <option value="Code Imposter">Code Imposter (Manual-Only)</option>
+                        <option value="Sherlock Holmes">Sherlock Holmes (Manual-Only)</option>
+                        <option value="Drawing">Drawing (Manual-Only)</option>
+                    </select>
+                </div>
+
+                <!-- Dynamic Grading Inputs -->
+                <div id="ai-score-container">
+                    <label class="block text-xs font-orbitron text-gray-400 mb-1">AI Score (0-100)</label>
+                    <input type="number" id="manual-ai" value="90" max="100" min="0" class="w-full bg-black border border-bordergray rounded-xl px-3 py-2 text-white focus:outline-none focus:border-crimson-500 font-mono">
+                </div>
+                <div id="jury-score-container" class="hidden">
+                    <label class="block text-xs font-orbitron text-gray-400 mb-1">Manual Jury Marks (0-100)</label>
+                    <input type="number" id="manual-jury" value="85" max="100" min="0" class="w-full bg-black border border-bordergray rounded-xl px-3 py-2 text-white focus:outline-none focus:border-crimson-500 font-mono">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-orbitron text-gray-400 mb-1">Spot Timestamp (MM:SS)</label>
+                    <input type="text" id="manual-time" value="03:45" class="w-full bg-black border border-bordergray rounded-xl px-3 py-2 text-white focus:outline-none focus:border-crimson-500 font-mono">
+                </div>
+                <div>
+                    <label class="block text-xs font-orbitron text-gray-400 mb-1">Submission Repository / Asset Link</label>
+                    <input type="url" id="manual-link" value="https://github.com/repo/project" class="w-full bg-black border border-bordergray rounded-xl px-3 py-2 text-white focus:outline-none focus:border-crimson-500 text-xs font-mono">
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button onclick="closeManualModal()" class="px-4 py-2 rounded-xl text-xs font-orbitron bg-bordergray text-gray-300 hover:bg-zinc-800">Cancel</button>
+                <button onclick="saveManualRecord()" class="px-5 py-2 rounded-xl text-xs font-orbitron bg-crimson-600 text-white font-bold hover:bg-crimson-700 shadow-lg shadow-crimson-600/30">Save Record</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script Engine -->
+    <script>
+        const eventsList = [
+            { id: 1, name: 'Imposter Project', type: 'AI', isOpen: true },
+            { id: 2, name: 'FizzBuzz', type: 'AI', isOpen: false },
+            { id: 3, name: 'Code Imposter', type: 'Manual', isOpen: false },
+            { id: 4, name: 'Sherlock Holmes', type: 'Manual', isOpen: false },
+            { id: 5, name: 'Drawing', type: 'Manual', isOpen: false }
+        ];
+
+        let submissions = [
+            { id: 1, participantName: 'Arpitha Bose', originalTeam: 'Team 1', event: 'Imposter Project', status: 'Submitted', timestamp: '04:12', aiScore: 94, juryMarks: 0, link: 'https://github.com/arpitha/imposter' },
+            { id: 2, participantName: 'Rahul Menon', originalTeam: 'Team 1', event: 'FizzBuzz', status: 'Submitted', timestamp: '03:04', aiScore: 88, juryMarks: 0, link: 'https://github.com/rahul/fizzbuzz' },
+            { id: 3, participantName: 'Sarah Williams', originalTeam: 'Team 2', event: 'Code Imposter', status: 'Submitted', timestamp: '05:20', aiScore: 0, juryMarks: 85, link: 'https://github.com/sarah/code' },
+            { id: 4, participantName: 'David Miller', originalTeam: 'Team 3', event: 'Drawing', status: 'Submitted', timestamp: '02:45', aiScore: 0, juryMarks: 92, link: 'https://drive.google.com/drawing' },
+            { id: 5, participantName: 'Ananya Sharma', originalTeam: 'Team 4', event: 'Sherlock Holmes', status: 'Pending', timestamp: '--:--', aiScore: 0, juryMarks: 0, link: '#' }
+        ];
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            document.querySelectorAll('aside nav button').forEach(btn => {
+                btn.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardgray hover:text-gray-200 transition-all";
+            });
+            document.getElementById(`nav-${tabId}`).className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-crimson-600 text-white shadow-lg shadow-crimson-600/30 transition-all";
+
+            const titles = {
+                'overview': 'Overview & Event Headings',
+                'submissions': 'Participants & Shuffling Grading',
+                'leaderboard': 'Original Team Podium (1st, 2nd, 3rd)',
+                'visibility': 'Event Flow & Gating Toggle'
+            };
+            document.getElementById('header-title').innerText = titles[tabId];
+
+            if(tabId === 'overview') renderOverviewConsolidated();
+            if(tabId === 'submissions') renderGradingEventsPanel();
+            if(tabId === 'leaderboard') renderLeaderboard();
+            if(tabId === 'visibility') renderGatingControl();
+        }
+
+        function toggleAccordion(id) {
+            let content = document.getElementById(`content-${id}`);
+            let icon = document.getElementById(`icon-${id}`);
+            if(content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.innerText = '▲';
+            } else {
+                content.classList.add('hidden');
+                icon.innerText = '▼';
+            }
+        }
+
+        // Handle dynamic modal field toggles based on event type
+        function handleEventTypeChange() {
+            let eventName = document.getElementById('manual-event').value;
+            let evObj = eventsList.find(e => e.name === eventName);
+            let aiContainer = document.getElementById('ai-score-container');
+            let juryContainer = document.getElementById('jury-score-container');
+
+            if(evObj && evObj.type === 'AI') {
+                aiContainer.classList.remove('hidden');
+                juryContainer.classList.add('hidden');
+            } else {
+                aiContainer.classList.add('hidden');
+                juryContainer.classList.remove('hidden');
+            }
+        }
+
+        // 1. Render Overview
+        function renderOverviewConsolidated() {
+            let activeOpenEvents = eventsList.filter(e => e.isOpen).map(e => e.name).join(', ') || 'None Open';
+            document.getElementById('sidebar-active-event').innerText = eventsList.find(e => e.isOpen)?.name ? `${eventsList.find(e => e.isOpen).name} (Open)` : 'All Locked';
+
+            let gatingPreviewHtml = '';
+            eventsList.forEach(ev => {
+                gatingPreviewHtml += `<div class="flex justify-between"><span>${ev.name}:</span> <strong class="${ev.isOpen ? 'text-emerald-400' : 'text-rose-400'}">${ev.isOpen ? 'OPEN' : 'LOCKED'}</strong></div>`;
+            });
+            document.getElementById('preview-active-gating').innerHTML = gatingPreviewHtml;
+
+            let teamTotalsPreview = {};
+            for(let i=1; i<=6; i++) teamTotalsPreview[`Team ${i}`] = 0;
+            submissions.forEach(s => {
+                if(s.status === 'Submitted' && teamTotalsPreview[s.originalTeam] !== undefined) {
+                    let evObj = eventsList.find(e => e.name === s.event);
+                    let score = (evObj && evObj.type === 'AI') ? (s.aiScore || 0) : (s.juryMarks || 0);
+                    teamTotalsPreview[s.originalTeam] += score;
+                }
+            });
+
+            let sideStandingsContainer = document.getElementById('preview-team-standings');
+            sideStandingsContainer.innerHTML = '';
+            Object.keys(teamTotalsPreview).forEach(tName => {
+                sideStandingsContainer.innerHTML += `
+                    <div class="flex justify-between items-center bg-black/60 px-3 py-1.5 rounded border border-bordergray">
+                        <span class="text-gray-300">${tName}</span>
+                        <span class="text-crimson-500 font-bold">${teamTotalsPreview[tName]} pts</span>
+                    </div>
+                `;
+            });
+
+            let overviewContainer = document.getElementById('overview-events-container');
+            overviewContainer.innerHTML = '';
+
+            eventsList.forEach(ev => {
+                let eventSubs = submissions.filter(s => s.event === ev.name);
+                let teamHtml = '';
+
+                for(let t=1; t<=6; t++) {
+                    let teamName = `Team ${t}`;
+                    let teamParticipants = eventSubs.filter(s => s.originalTeam === teamName);
+                    let participantCardsHtml = '';
+
+                    if(teamParticipants.length > 0) {
+                        teamParticipants.forEach(p => {
+                            let displayScore = (ev.type === 'AI') ? `${p.aiScore || 0} AI Score` : `${p.juryMarks || 0} Jury Marks`;
+                            let statusBadge = p.status === 'Submitted' 
+                                ? `<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✅ Graded</span>` 
+                                : `<span class="px-2 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-400 border border-rose-500/20">❌ Pending</span>`;
+
+                            participantCardsHtml += `
+                                <div class="bg-black/60 border border-bordergray p-3 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-2 text-xs font-rajdhani">
+                                    <div>
+                                        <div class="font-bold text-white text-sm">${p.participantName}</div>
+                                        <div class="text-gray-400 font-mono text-[11px]">Score: <strong class="text-emerald-400">${displayScore}</strong></div>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <span>${statusBadge}</span>
+                                        <span class="font-mono text-cyan-400">⏱️ ${p.timestamp}</span>
+                                        <a href="${p.link && p.link !== '#' ? p.link : '#'}" target="_blank" class="text-crimson-500 hover:underline font-mono text-[11px]">🔗 Link</a>
+                                        <button onclick="openEditModal(${p.id})" class="text-[11px] font-orbitron bg-cyan-600/20 text-cyan-400 hover:bg-cyan-600 hover:text-white px-2 py-0.5 rounded transition-all border border-cyan-600/30">Edit</button>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        participantCardsHtml = `<div class="text-xs text-gray-500 italic p-2">No participants registered under this team for this event.</div>`;
+                    }
+
+                    teamHtml += `
+                        <div class="bg-cardgray/70 border border-bordergray/60 p-4 rounded-xl space-y-3">
+                            <div class="flex items-center justify-between border-b border-bordergray pb-1.5">
+                                <h5 class="font-orbitron font-bold text-xs text-crimson-500 tracking-wider uppercase">${teamName}</h5>
+                                <button onclick="openModalForTeamEvent('${teamName}', '${ev.name}')" class="text-[10px] font-orbitron bg-crimson-600/20 text-rose-400 hover:bg-crimson-600 hover:text-white px-2 py-0.5 rounded transition-all border border-crimson-600/30">+ Add Member</button>
+                            </div>
+                            <div class="space-y-2">
+                                ${participantCardsHtml}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                overviewContainer.innerHTML += `
+                    <div class="bg-cardgray border border-bordergray rounded-2xl p-6 shadow-xl space-y-6">
+                        <div class="flex items-center justify-between border-b border-bordergray pb-3">
+                            <h3 class="text-base font-orbitron font-bold text-white tracking-wide uppercase flex items-center gap-2">
+                                <span class="text-crimson-500">#</span> ${ev.name} <span class="text-xs text-gray-400 font-mono font-normal">(${ev.type === 'AI' ? 'AI-Only' : 'Manual Jury-Only'})</span>
+                            </h3>
+                            <div class="flex items-center gap-3">
+                                <button onclick="openModalForEvent('${ev.name}')" class="text-xs font-orbitron bg-crimson-600 text-white hover:bg-crimson-700 px-3 py-1 rounded-lg transition-all shadow-md">+ Add Participant</button>
+                                <span class="px-3 py-1 rounded text-xs font-orbitron border ${ev.isOpen ? 'text-emerald-400 border-emerald-500/30 bg-emerald-950/20' : 'text-rose-400 border-rose-500/30 bg-rose-950/20'}">
+                                    ${ev.isOpen ? 'OPEN' : 'LOCKED'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${teamHtml}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // 2. Render Participants & Grading Panel
+        function renderGradingEventsPanel() {
+            let container = document.getElementById('grading-events-container');
+            container.innerHTML = '';
+
+            eventsList.forEach(ev => {
+                let eventSubs = submissions.filter(s => s.event === ev.name);
+                let teamHtml = '';
+
+                for(let t=1; t<=6; t++) {
+                    let teamName = `Team ${t}`;
+                    let teamParticipants = eventSubs.filter(s => s.originalTeam === teamName);
+                    let participantCardsHtml = '';
+
+                    if(teamParticipants.length > 0) {
+                        teamParticipants.forEach(p => {
+                            let displayScore = (ev.type === 'AI') ? `${p.aiScore || 0} AI Score` : `${p.juryMarks || 0} Jury Marks`;
+                            let statusBadge = p.status === 'Submitted' 
+                                ? `<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✅ Graded</span>` 
+                                : `<span class="px-2 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-400 border border-rose-500/20">❌ Pending</span>`;
+
+                            participantCardsHtml += `
+                                <div class="bg-black/60 border border-bordergray p-4 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                    <div>
+                                        <div class="font-bold text-white text-sm">${p.participantName}</div>
+                                        <div class="text-xs text-gray-400 font-mono">Timestamp: ${p.timestamp}</div>
+                                    </div>
+                                    <div class="flex items-center gap-6">
+                                        <div>
+                                            <div class="text-[10px] text-gray-500 font-orbitron uppercase">${ev.type === 'AI' ? 'AI Score' : 'Jury Marks'}</div>
+                                            <div class="font-mono font-bold text-emerald-400 text-sm">${displayScore}</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-[10px] text-gray-500 font-orbitron uppercase">Status</div>
+                                            <div>${statusBadge}</div>
+                                        </div>
+                                        <a href="${p.link && p.link !== '#' ? p.link : '#'}" target="_blank" class="text-crimson-500 hover:underline font-mono text-xs">🔗 Link</a>
+                                        <button onclick="openEditModal(${p.id})" class="text-xs font-orbitron bg-cyan-600/20 text-cyan-400 hover:bg-cyan-600 hover:text-white px-2.5 py-1 rounded transition-all border border-cyan-600/30">Edit Marks</button>
+                                        <button onclick="deleteSubmission(${p.id})" class="text-xs text-rose-500 hover:text-rose-400 font-orbitron">Remove</button>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        participantCardsHtml = `<div class="text-xs text-gray-500 italic p-2">No participants registered under this team for this event module.</div>`;
+                    }
+
+                    teamHtml += `
+                        <div class="bg-cardgray/70 border border-bordergray/60 p-5 rounded-xl space-y-3">
+                            <div class="flex items-center justify-between border-b border-bordergray pb-2">
+                                <h4 class="font-orbitron font-bold text-sm text-crimson-500 uppercase">${teamName}</h4>
+                                <button onclick="openModalForTeamEvent('${teamName}', '${ev.name}')" class="text-xs font-orbitron bg-crimson-600 hover:bg-crimson-700 text-white px-3 py-1 rounded-lg transition-all shadow-md">+ Add to ${teamName}</button>
+                            </div>
+                            <div class="space-y-3">
+                                ${participantCardsHtml}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                container.innerHTML += `
+                    <div class="bg-cardgray border border-bordergray rounded-2xl p-6 shadow-xl space-y-6">
+                        <div class="flex items-center justify-between border-b border-bordergray pb-3">
+                            <h3 class="text-lg font-orbitron font-bold text-white tracking-wide uppercase flex items-center gap-2">
+                                <span class="text-crimson-500">#</span> ${ev.name} <span class="text-xs text-gray-400 font-mono font-normal">(${ev.type === 'AI' ? 'AI-Only' : 'Manual Jury-Only'})</span>
+                            </h3>
+                            <button onclick="openModalForEvent('${ev.name}')" class="text-xs font-orbitron bg-crimson-600 hover:bg-crimson-700 text-white px-3 py-1.5 rounded-lg transition-all shadow-md">+ Add Participant to Event</button>
+                        </div>
+                        <div class="space-y-4">
+                            ${teamHtml}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function deleteSubmission(id) {
+            submissions = submissions.filter(s => s.id !== id);
+            renderOverviewConsolidated();
+            renderGradingEventsPanel();
+        }
+
+        function openManualModal() {
+            document.getElementById('modal-title-text').innerText = "Add Shuffled Participant";
+            document.getElementById('manual-participant-name').value = '';
+            document.getElementById('manual-participant-name').disabled = false;
+            document.getElementById('manual-event').value = 'Imposter Project';
+            document.getElementById('manual-ai').value = 90;
+            document.getElementById('manual-jury').value = 85;
+            document.getElementById('manual-time').value = '03:45';
+            document.getElementById('manual-link').value = 'https://github.com/repo/project';
+            handleEventTypeChange();
+            document.getElementById('manual-modal').classList.remove('hidden');
+        }
+
+        function openEditModal(id) {
+            let item = submissions.find(s => s.id === id);
+            if(item) {
+                document.getElementById('modal-title-text').innerText = `Edit Marks: ${item.participantName}`;
+                document.getElementById('manual-participant-name').value = item.participantName;
+                document.getElementById('manual-participant-name').disabled = true;
+                document.getElementById('manual-original-team').value = item.originalTeam;
+                document.getElementById('manual-event').value = item.event;
+                document.getElementById('manual-ai').value = item.aiScore || 0;
+                document.getElementById('manual-jury').value = item.juryMarks || 0;
+                document.getElementById('manual-time').value = item.timestamp || '03:00';
+                document.getElementById('manual-link').value = item.link || '#';
+                handleEventTypeChange();
+                document.getElementById('manual-modal').classList.remove('hidden');
+            }
+        }
+
+        function openModalForEvent(eventName) {
+            openManualModal();
+            document.getElementById('manual-event').value = eventName;
+            handleEventTypeChange();
+        }
+
+        function openModalForTeamEvent(teamName, eventName) {
+            openManualModal();
+            document.getElementById('manual-original-team').value = teamName;
+            document.getElementById('manual-event').value = eventName;
+            handleEventTypeChange();
+        }
+
+        function closeManualModal() {
+            document.getElementById('manual-participant-name').disabled = false;
+            document.getElementById('manual-modal').classList.add('hidden');
+        }
+
+        function saveManualRecord() {
+            let participantName = document.getElementById('manual-participant-name').value.trim();
+            let originalTeam = document.getElementById('manual-original-team').value;
+            let event = document.getElementById('manual-event').value;
+            let time = document.getElementById('manual-time').value.trim();
+            let link = document.getElementById('manual-link').value.trim();
+
+            let evObj = eventsList.find(e => e.name === event);
+            let ai = (evObj && evObj.type === 'AI') ? Number(document.getElementById('manual-ai').value) : 0;
+            let jury = (evObj && evObj.type === 'Manual') ? Number(document.getElementById('manual-jury').value) : 0;
+
+            if(!participantName) { alert("Please enter participant name."); return; }
+
+            let existing = submissions.find(s => s.participantName === participantName && s.event === event);
+            if(existing) {
+                existing.status = 'Submitted';
+                existing.originalTeam = originalTeam;
+                existing.aiScore = ai;
+                existing.juryMarks = jury;
+                existing.timestamp = time || '03:00';
+                existing.link = link || '#';
+            } else {
+                submissions.push({
+                    id: Date.now(),
+                    participantName: participantName,
+                    originalTeam: originalTeam,
+                    event: event,
+                    status: 'Submitted',
+                    timestamp: time || '03:00',
+                    aiScore: ai,
+                    juryMarks: jury,
+                    link: link || '#'
+                });
+            }
+
+            document.getElementById('manual-participant-name').disabled = false;
+            closeManualModal();
+            renderOverviewConsolidated();
+            renderGradingEventsPanel();
+            alert("Participant grades successfully updated.");
+        }
+
+        function renderLeaderboard() {
+            let container = document.getElementById('podium-container');
+            container.innerHTML = '';
+
+            let teamTotals = {};
+            for(let i=1; i<=6; i++) {
+                teamTotals[`Team ${i}`] = { totalMarks: 0, gradedEntries: 0 };
+            }
+
+            submissions.forEach(sub => {
+                if(sub.status === 'Submitted' && teamTotals[sub.originalTeam] !== undefined) {
+                    let evObj = eventsList.find(e => e.name === sub.event);
+                    let score = (evObj && evObj.type === 'AI') ? (sub.aiScore || 0) : (sub.juryMarks || 0);
+                    teamTotals[sub.originalTeam].totalMarks += score;
+                    teamTotals[sub.originalTeam].gradedEntries += 1;
+                }
+            });
+
+            let sortedTeams = Object.keys(teamTotals).map(tName => ({
+                name: tName,
+                totalMarks: teamTotals[tName].totalMarks,
+                entries: teamTotals[tName].gradedEntries
+            })).sort((a,b) => b.totalMarks - a.totalMarks);
+
+            let medals = ['🥇 1ST PLACE', '🥈 2ND PLACE', '🥉 3RD PLACE'];
+            let colors = ['border-amber-500/50 bg-amber-950/10 text-amber-400', 'border-slate-400/50 bg-slate-900/40 text-slate-300', 'border-amber-700/50 bg-amber-950/20 text-amber-600'];
+
+            for (let i = 0; i < 3; i++) {
+                let team = sortedTeams[i];
+
+                container.innerHTML += `
+                    <div class="bg-cardgray border ${colors[i]} rounded-2xl p-6 text-center space-y-3 shadow-xl">
+                        <span class="font-orbitron font-extrabold text-xs tracking-wider">${medals[i]}</span>
+                        <h4 class="text-xl font-bold text-white font-orbitron">${team.name}</h4>
+                        <p class="text-xs text-gray-400 font-mono">Graded Submissions: ${team.entries}</p>
+                        <div class="pt-2 border-t border-bordergray flex justify-around text-xs font-mono">
+                            <span>Cumulative Prize Score: <strong class="text-white">${team.totalMarks} pts</strong></span>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function renderGatingControl() {
+            let container = document.getElementById('event-gating-list');
+            container.innerHTML = '';
+
+            eventsList.forEach(ev => {
+                container.innerHTML += `
+                    <div class="flex items-center justify-between p-4 bg-black rounded-xl border border-bordergray">
+                        <div>
+                            <span class="font-orbitron font-bold text-white text-sm block">${ev.name} <span class="text-xs text-gray-400 font-mono font-normal">(${ev.type === 'AI' ? 'AI-Only' : 'Manual Jury-Only'})</span></span>
+                            <span class="text-xs text-gray-400 font-mono">Frontend Access: <strong class="${ev.isOpen ? 'text-emerald-400' : 'text-rose-400'} uppercase">${ev.isOpen ? 'Open' : 'Locked'}</strong></span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" ${ev.isOpen ? 'checked' : ''} onchange="toggleEventGating(${ev.id}, this.checked)" class="sr-only peer">
+                            <div class="w-11 h-6 bg-bordergray rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-crimson-600"></div>
+                        </label>
+                    </div>
+                `;
+            });
+        }
+
+        function toggleEventGating(eventId, isOpen) {
+            let ev = eventsList.find(e => e.id === eventId);
+            if(ev) {
+                ev.isOpen = isOpen;
+                renderGatingControl();
+            }
+        }
+
+        window.onload = function() {
+            renderOverviewConsolidated();
+            renderGradingEventsPanel();
+        };
+    </script>
+</body>
+</html>
