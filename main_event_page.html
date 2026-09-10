@@ -231,6 +231,13 @@
     </div>
 
     <script>
+        const participantSession = sessionStorage.getItem('imposterParticipant');
+        const participantData = participantSession ? JSON.parse(participantSession) : null;
+
+        if (!participantData) {
+            window.location.href = 'homepage.html';
+        }
+
         // ---------------- AUTOMATIC STOPWATCH ----------------
         let elapsedSeconds = 0;
         let stopwatchInterval = null;

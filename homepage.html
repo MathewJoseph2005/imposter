@@ -626,26 +626,45 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ 
-                        name: name, 
-                        team_name: team_name 
+                    body: JSON.stringify({
+                        name: name,
+                        team_name: team_name
                     })
                 });
 
                 const data = await response.json();
 
-                if (response.ok) {
-                    resBox.className = 'response-box response-success';
-                    resBox.innerHTML = `✓ ${data.message}<br>Agent: <strong>${data.user.name}</strong> (${data.user.team_name})`;
-                    resBox.style.display = 'block';
+                if (response.ok && data && data.success === true) {
+                    const user = data.user || {};
 
-                    // Redirect to main.html on successful authentication
-                    setTimeout(() => {
-                        window.location.href = 'main.html';
-                    }, 1500);
+                    if (user.team_code) {
+                        sessionStorage.setItem('imposterTeamCode', user.team_code);
+                        localStorage.setItem('imposterTeamCode', user.team_code);
+                    }
+
+                    if (user.team_name) {
+                        sessionStorage.setItem('imposterTeamName', user.team_name);
+                        localStorage.setItem('imposterTeamName', user.team_name);
+                    }
+
+                    if (user) {
+                        sessionStorage.setItem('imposterParticipant', JSON.stringify(user));
+                    }
+
+                    window.location.href = 'main_event_page.html';
+                    return;
+                }
+
+                if (data && data.message) {
+                    resBox.className = 'response-box response-error';
+                    resBox.innerHTML = data.message;
+                    resBox.style.display = 'block';
                 }
             } catch (error) {
-                // Connection/backend errors skipped silently
+                const message = error && error.message ? error.message : 'Authentication failed.';
+                resBox.className = 'response-box response-error';
+                resBox.innerHTML = message;
+                resBox.style.display = 'block';
             }
         }
 
