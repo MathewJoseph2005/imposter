@@ -1,188 +1,66 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IMPOSTER PROJECT</title>
+    <title>IMPOSTER PROJECT - Main Event</title>
     <style>
         :root {
-            --bg-black: #080808;
-            --bg-charcoal: #141414;
-            --bg-card: #1f1f1f;
+            --bg-black:        #080808;
+            --bg-charcoal:     #141414;
             --primary-crimson: #dc143c;
-            --primary-red: #ff1e42;
-            --glow-red: rgba(220, 20, 60, 0.4);
-            --text-main: #f0f0f0;
-            --text-sub: #a0a0a0;
-            --border-dark: #2a2a2a;
+            --primary-red:     #ff1e42;
+            --glow-red:        rgba(220, 20, 60, 0.4);
+            --cyan:            #00f0ff;
+            --green:           #00ff80;
+            --text-main:       #f0f0f0;
+            --text-sub:        #a0a0a0;
+            --border-dark:     #2a2a2a;
+            --border-mid:      #3a3a3a;
         }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Courier New', Courier, monospace, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-black);
-            color: var(--text-main);
-            line-height: 1.6;
-            padding-bottom: 60px;
-        }
-
-        header {
-            background-color: var(--bg-charcoal);
-            border-bottom: 2px solid var(--primary-crimson);
-            padding: 25px 8%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-
-        .brand h1 {
-            color: var(--primary-red);
-            font-size: 2.2rem;
-            font-weight: 900;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            text-shadow: 0 0 10px var(--glow-red);
-        }
-
-        .brand span {
-            color: var(--text-sub);
-            font-size: 0.85rem;
-            letter-spacing: 2px;
-            display: block;
-            margin-top: 4px;
-        }
-
-        /* Stopwatch Display (Without Control Buttons) */
-        .stopwatch-box {
-            background: var(--bg-black);
-            border: 2px solid var(--primary-crimson);
-            padding: 12px 28px;
-            border-radius: 4px;
-            text-align: center;
-            box-shadow: 0 0 15px var(--glow-red);
-            animation: pulse 2s infinite alternate;
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 5px var(--glow-red); }
-            100% { box-shadow: 0 0 20px var(--glow-red); }
-        }
-
-        .stopwatch-label {
-            font-size: 0.7rem;
-            color: var(--primary-red);
-            text-transform: uppercase;
-            font-weight: bold;
-            letter-spacing: 2px;
-        }
-
-        .stopwatch-display {
-            font-size: 1.9rem;
-            font-weight: bold;
-            color: var(--text-main);
-            letter-spacing: 2px;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
-
-        .section-header {
-            color: var(--primary-red);
-            font-size: 1.4rem;
-            margin-bottom: 20px;
-            text-transform: uppercase;
-            border-left: 4px solid var(--primary-crimson);
-            padding-left: 12px;
-            letter-spacing: 1px;
-        }
-
-        /* Submission Form Card */
-        .form-card {
-            background-color: var(--bg-charcoal);
-            border: 1px solid var(--primary-crimson);
-            border-radius: 6px;
-            padding: 30px;
-            box-shadow: 0 0 25px rgba(0, 0, 0, 0.8);
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--text-main);
-            font-size: 0.9rem;
-            letter-spacing: 1px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            background-color: var(--bg-black);
-            border: 1px solid var(--border-dark);
-            color: var(--primary-red);
-            font-size: 1rem;
-            border-radius: 4px;
-            outline: none;
-        }
-
-        .form-group input:focus {
-            border-color: var(--primary-crimson);
-            box-shadow: 0 0 8px var(--glow-red);
-        }
-
-        .btn-submit {
-            width: 100%;
-            padding: 15px;
-            background-color: var(--primary-crimson);
-            color: #fff;
-            border: none;
-            font-size: 1.1rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: background-color 0.3s, box-shadow 0.3s;
-        }
-
-        .btn-submit:hover {
-            background-color: var(--primary-red);
-            box-shadow: 0 0 20px var(--glow-red);
-        }
-
-        .alert-box {
-            margin-top: 20px;
-            padding: 12px;
-            border-radius: 4px;
-            display: none;
-            text-align: center;
-            font-weight: bold;
-        }
-
-        .alert-success {
-            background-color: rgba(0, 255, 128, 0.1);
-            border: 1px solid #00ff80;
-            color: #00ff80;
-        }
-
-        .alert-error {
-            background-color: rgba(220, 20, 60, 0.2);
-            border: 1px solid var(--primary-crimson);
-            color: var(--primary-red);
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace, sans-serif; }
+        body { background-color: var(--bg-black); color: var(--text-main); line-height: 1.6; padding-bottom: 60px; }
+        header { background-color: var(--bg-charcoal); border-bottom: 2px solid var(--primary-crimson); padding: 25px 8%; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
+        .brand h1 { color: var(--primary-red); font-size: 2.2rem; font-weight: 900; letter-spacing: 4px; text-transform: uppercase; text-shadow: 0 0 10px var(--glow-red); }
+        .brand span { color: var(--text-sub); font-size: 0.85rem; letter-spacing: 2px; display: block; margin-top: 4px; }
+        .stopwatch-box { background: var(--bg-black); border: 2px solid var(--primary-crimson); padding: 12px 28px; border-radius: 4px; text-align: center; box-shadow: 0 0 15px var(--glow-red); animation: glowPulse 2s infinite alternate; }
+        @keyframes glowPulse { 0% { box-shadow: 0 0 5px var(--glow-red); } 100% { box-shadow: 0 0 20px var(--glow-red); } }
+        .stopwatch-label { font-size: 0.7rem; color: var(--primary-red); text-transform: uppercase; font-weight: bold; letter-spacing: 2px; }
+        .stopwatch-display { font-size: 1.9rem; font-weight: bold; color: var(--text-main); letter-spacing: 2px; }
+        .container { max-width: 820px; margin: 36px auto; padding: 0 20px; display: flex; flex-direction: column; gap: 24px; }
+        .section-header { color: var(--primary-red); font-size: 1.2rem; margin-bottom: 18px; text-transform: uppercase; border-left: 4px solid var(--primary-crimson); padding-left: 12px; letter-spacing: 1px; }
+        .state-card { background-color: var(--bg-charcoal); border: 1px solid var(--border-mid); border-radius: 6px; padding: 28px 30px; text-align: center; color: var(--text-sub); font-size: 1rem; letter-spacing: 1px; }
+        .state-card.error { border-color: var(--primary-crimson); color: var(--primary-red); }
+        .assignment-card { background-color: var(--bg-charcoal); border: 1px solid var(--primary-crimson); border-radius: 6px; padding: 28px 30px; box-shadow: 0 0 20px rgba(0,0,0,0.7); }
+        .meta-row { display: flex; gap: 28px; flex-wrap: wrap; margin-bottom: 22px; padding-bottom: 18px; border-bottom: 1px solid var(--border-dark); }
+        .meta-item { display: flex; flex-direction: column; gap: 4px; }
+        .meta-label { font-size: 0.68rem; letter-spacing: 2px; text-transform: uppercase; color: var(--text-sub); }
+        .meta-value { font-size: 1rem; font-weight: bold; color: var(--cyan); letter-spacing: 1px; }
+        .task-title-row { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+        .task-number-badge { background: var(--primary-crimson); color: #fff; font-size: 0.7rem; font-weight: 900; letter-spacing: 2px; padding: 3px 10px; border-radius: 3px; text-transform: uppercase; white-space: nowrap; }
+        .task-title-text { font-size: 1.2rem; font-weight: 900; color: var(--text-main); letter-spacing: 2px; text-transform: uppercase; }
+        .task-description { font-size: 0.88rem; color: var(--text-sub); line-height: 1.65; margin-bottom: 22px; }
+        .work-block { background: rgba(0,0,0,0.45); border: 1px solid var(--border-mid); border-left: 3px solid var(--cyan); border-radius: 4px; padding: 18px 20px; margin-bottom: 14px; }
+        .work-block.secret { border-left-color: var(--primary-red); background: rgba(220,20,60,0.06); }
+        .work-block-label { font-size: 0.68rem; letter-spacing: 2px; text-transform: uppercase; color: var(--text-sub); margin-bottom: 6px; }
+        .work-block.secret .work-block-label { color: var(--primary-red); }
+        .work-role-title { font-size: 1rem; font-weight: 900; color: var(--cyan); letter-spacing: 1px; margin-bottom: 8px; }
+        .work-block.secret .work-role-title { color: var(--primary-red); }
+        .work-text { font-size: 0.88rem; color: var(--text-main); line-height: 1.7; white-space: pre-wrap; }
+        .form-card { background-color: var(--bg-charcoal); border: 1px solid var(--border-mid); border-radius: 6px; padding: 28px 30px; box-shadow: 0 0 20px rgba(0,0,0,0.7); }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: var(--text-sub); font-size: 0.78rem; letter-spacing: 2px; text-transform: uppercase; }
+        .form-group input[type="url"] { width: 100%; padding: 13px 14px; background-color: var(--bg-black); border: 1px solid var(--border-dark); color: var(--primary-red); font-size: 1rem; border-radius: 4px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; font-family: 'Courier New', monospace; }
+        .form-group input[type="url"]:focus { border-color: var(--primary-crimson); box-shadow: 0 0 8px var(--glow-red); }
+        .form-group input[type="url"]:disabled { opacity: 0.45; cursor: not-allowed; }
+        .btn-submit { width: 100%; padding: 15px; background-color: var(--primary-crimson); color: #fff; border: none; font-size: 1rem; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; border-radius: 4px; transition: background-color 0.25s, box-shadow 0.25s; font-family: 'Courier New', monospace; }
+        .btn-submit:hover:not(:disabled) { background-color: var(--primary-red); box-shadow: 0 0 20px var(--glow-red); }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+        .alert-box { margin-top: 18px; padding: 13px 16px; border-radius: 4px; display: none; text-align: center; font-weight: bold; font-size: 0.9rem; line-height: 1.5; }
+        .alert-success { background-color: rgba(0,255,128,0.08); border: 1px solid var(--green); color: var(--green); }
+        .alert-error   { background-color: rgba(220,20,60,0.14);  border: 1px solid var(--primary-crimson); color: var(--primary-red); }
+        .submitted-banner { background: rgba(0,255,128,0.06); border: 1px solid var(--green); border-radius: 4px; padding: 14px 18px; color: var(--green); font-size: 0.88rem; text-align: center; letter-spacing: 1px; word-break: break-all; }
+        @media (max-width: 600px) { header { padding: 18px 5%; } .meta-row { gap: 16px; } .task-title-text { font-size: 1rem; } }
     </style>
 </head>
 <body>
@@ -190,7 +68,7 @@
     <header>
         <div class="brand">
             <h1>IMPOSTER PROJECT</h1>
-            <span>CODE EVALUATION PORTAL</span>
+            <span>MAIN EVENT &mdash; CODE EVALUATION PORTAL</span>
         </div>
         <div class="stopwatch-container">
             <div class="stopwatch-box">
@@ -201,94 +79,159 @@
     </header>
 
     <div class="container">
-
-        <!-- Submission Form -->
-        <div class="form-card">
-            <h2 class="section-header">Submit GitHub Repository</h2>
-            <form id="submissionForm">
-                
-                <div class="form-group">
-                    <label for="teamName">TEAM / PARTICIPANT NAME</label>
-                    <input type="text" id="teamName" placeholder="e.g., Red Vent Specialist" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="taskName">TASK</label>
-                    <input type="text" id="taskName" placeholder="e.g., Task 1: System Monitoring" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="githubUrl">GITHUB REPOSITORY LINK</label>
-                    <input type="url" id="githubUrl" placeholder="https://github.com/username/impostor-repo" required>
-                </div>
-
-                <button type="submit" class="btn-submit">Submit Link for Evaluation</button>
-                <div id="alertBox" class="alert-box"></div>
-
-            </form>
+        <div id="assignment-section">
+            <div class="state-card" id="assignment-loading">Loading your assignment...</div>
         </div>
-
+        <div id="submission-section" style="display:none;">
+            <div class="form-card">
+                <h2 class="section-header">Submit GitHub Repository</h2>
+                <div id="already-submitted-banner" class="submitted-banner" style="display:none;"></div>
+                <form id="submissionForm">
+                    <div class="form-group">
+                        <label for="githubUrl">GitHub Repository Link</label>
+                        <input type="url" id="githubUrl" placeholder="https://github.com/username/repository" required autocomplete="off">
+                    </div>
+                    <button type="submit" id="submitBtn" class="btn-submit">Submit Link for Evaluation</button>
+                    <div id="alertBox" class="alert-box"></div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script>
-        const participantSession = sessionStorage.getItem('imposterParticipant');
-        const participantData = participantSession ? JSON.parse(participantSession) : null;
-
-        if (!participantData) {
+        // Read participant_id from localStorage (set by homepage after successful auth).
+        // Fall back to sessionStorage imposterParticipant for backwards compatibility.
+        var PARTICIPANT_ID = localStorage.getItem('participant_id') || sessionStorage.getItem('participant_id');
+        if (!PARTICIPANT_ID) {
+            var _s = sessionStorage.getItem('imposterParticipant');
+            var _p = _s ? JSON.parse(_s) : null;
+            PARTICIPANT_ID = _p && _p.id ? String(_p.id) : null;
+        }
+        if (!PARTICIPANT_ID) {
             window.location.href = 'homepage.html';
         }
+        // PARTICIPANT_ID is a UUID string — never parse as integer
 
-        // ---------------- AUTOMATIC STOPWATCH ----------------
-        let elapsedSeconds = 0;
-        let stopwatchInterval = null;
+        var elapsedSeconds = 0;
+        var stopwatchEl    = document.getElementById('stopwatch');
+        var swInterval     = setInterval(tick, 1000);
 
-        const stopwatchDisplay = document.getElementById('stopwatch');
+        function pad(n)  { return String(n).padStart(2, '0'); }
+        function tick()  { elapsedSeconds++; var h=Math.floor(elapsedSeconds/3600),m=Math.floor((elapsedSeconds%3600)/60),s=elapsedSeconds%60; stopwatchEl.innerText=pad(h)+':'+pad(m)+':'+pad(s); }
+        function stopSW(){ clearInterval(swInterval); }
+        function getSW() { return stopwatchEl.innerText; }
 
-        function updateStopwatchDisplay() {
-            let hours = Math.floor(elapsedSeconds / 3600);
-            let minutes = Math.floor((elapsedSeconds % 3600) / 60);
-            let seconds = elapsedSeconds % 60;
-
-            const pad = (n) => String(n).padStart(2, '0');
-            stopwatchDisplay.innerText = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+        function esc(str) {
+            return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
         }
 
-        // Starts automatically on page load
-        stopwatchInterval = setInterval(() => {
-            elapsedSeconds++;
-            updateStopwatchDisplay();
-        }, 1000);
+        function renderAssignment(a) {
+            var html =
+                '<div class="assignment-card">'+
+                '<h2 class="section-header">Your Assignment</h2>'+
+                '<div class="meta-row">'+
+                  '<div class="meta-item"><span class="meta-label">Participant</span><span class="meta-value">'+esc(a.participant_name)+'</span></div>'+
+                  '<div class="meta-item"><span class="meta-label">Original Team</span><span class="meta-value">'+esc(a.original_team)+'</span></div>'+
+                  '<div class="meta-item"><span class="meta-label">Shuffled Group</span><span class="meta-value">'+esc(a.shuffled_group)+'</span></div>'+
+                '</div>'+
+                '<div class="task-title-row">'+
+                  '<span class="task-number-badge">Task '+a.task_number+'</span>'+
+                  '<span class="task-title-text">'+esc(a.task_title)+'</span>'+
+                '</div>'+
+                '<p class="task-description">'+esc(a.task_description)+'</p>'+
+                '<div class="work-block">'+
+                  '<div class="work-block-label">Your Role</div>'+
+                  '<div class="work-role-title">'+esc(a.role_name)+'</div>'+
+                  '<div class="work-text">'+esc(a.work_description)+'</div>'+
+                '</div>';
+            if (a.is_imposter) {
+                html +=
+                  '<div class="work-block secret">'+
+                    '<div class="work-block-label">&#9888; Secret Objective &mdash; Do Not Share</div>'+
+                    '<div class="work-role-title">The above is your SECRET task. Do not reveal it to anyone.</div>'+
+                  '</div>';
+            }
+            html += '</div>';
+            document.getElementById('assignment-section').innerHTML = html;
+        }
 
-        // ---------------- FORM SUBMISSION HANDLING ----------------
-        const form = document.getElementById('submissionForm');
-        const alertBox = document.getElementById('alertBox');
+        function lockForm(repo, ts) {
+            document.getElementById('submissionForm').style.display = 'none';
+            var b = document.getElementById('already-submitted-banner');
+            b.innerText = '\u2713 Submitted' + (ts ? ' on '+new Date(ts).toLocaleString() : '') + '\n' + repo;
+            b.style.display = 'block';
+        }
 
-        form.addEventListener('submit', (e) => {
+        async function loadAssignment() {
+            try {
+                var res  = await fetch('http://localhost:3000/api/my-assignment/'+PARTICIPANT_ID);
+                var data = await res.json();
+                if (!res.ok || !data.success) {
+                    document.getElementById('assignment-section').innerHTML =
+                        '<div class="state-card error">'+esc(data&&data.message?data.message:'Assignment not found.')+'</div>';
+                    return;
+                }
+                renderAssignment(data.assignment);
+                document.getElementById('submission-section').style.display = 'block';
+                if (data.assignment.submission_status === 'Submitted' && data.assignment.github_repo) {
+                    lockForm(data.assignment.github_repo, data.assignment.submitted_at);
+                }
+            } catch(e) {
+                document.getElementById('assignment-section').innerHTML =
+                    '<div class="state-card error">Unable to reach the server. Make sure the backend is running on localhost:3000.</div>';
+            }
+        }
+
+        document.getElementById('submissionForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+            var url      = document.getElementById('githubUrl').value.trim();
+            var alertBox = document.getElementById('alertBox');
+            var btn      = document.getElementById('submitBtn');
+            var re       = /^https?:\/\/(www\.)?github\.com\/[A-Za-z0-9_.\-]+\/[A-Za-z0-9_.\-]+\/?$/;
 
-            const teamName = document.getElementById('teamName').value.trim();
-            const taskName = document.getElementById('taskName').value.trim();
-            const githubUrl = document.getElementById('githubUrl').value.trim();
-
-            const githubRegex = /^https?:\/\/(www\.)?github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/?$/;
-
-            if (!githubRegex.test(githubUrl)) {
+            alertBox.style.display = 'none';
+            if (!re.test(url)) {
                 alertBox.className = 'alert-box alert-error';
-                alertBox.innerText = 'INVALID LINK: Please enter a valid GitHub repository URL (e.g., https://github.com/user/repository).';
+                alertBox.innerText = 'INVALID LINK - Enter a valid GitHub repository URL.\ne.g. https://github.com/username/repository';
                 alertBox.style.display = 'block';
                 return;
             }
 
-            // Stop the stopwatch automatically on valid submission
-            clearInterval(stopwatchInterval);
-            const finalTime = stopwatchDisplay.innerText;
+            btn.disabled = true;
+            btn.textContent = 'SUBMITTING...';
+            stopSW();
+            var finalTime = getSW();
 
-            alertBox.className = 'alert-box alert-success';
-            alertBox.innerText = `SUBMISSION SUCCESSFUL! "${teamName}" submitted for ${taskName} at ${finalTime}. Stopwatch stopped.`;
-            alertBox.style.display = 'block';
+            try {
+                var res  = await fetch('http://localhost:3000/api/submit-github', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ participant_id: PARTICIPANT_ID, github_repo: url, elapsed_time: finalTime })
+                });
+                var data = await res.json();
 
-            form.reset();
+                if ((res.ok && data && data.success) || res.status === 409) {
+                    lockForm(url, new Date().toISOString());
+                    return;
+                }
+
+                alertBox.className = 'alert-box alert-error';
+                alertBox.innerText = (data && data.message) ? data.message : 'Submission failed. Try again.';
+                alertBox.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Submit Link for Evaluation';
+                swInterval = setInterval(tick, 1000);
+            } catch(err) {
+                alertBox.className = 'alert-box alert-error';
+                alertBox.innerText = 'Unable to reach the server. Make sure the backend is running on localhost:3000.';
+                alertBox.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Submit Link for Evaluation';
+                swInterval = setInterval(tick, 1000);
+            }
         });
+
+        loadAssignment();
     </script>
 
 </body>

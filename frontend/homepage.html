@@ -301,7 +301,15 @@
                 // Success: show role reveal
                 if (response.ok && data && data.success === true) {
                     var user = data.user || {};
-                    // Persist only what the event page needs — never store group or seating info
+                    // Persist participant identity — participant_id is the key used by main_event_page
+                    if (user.id) {
+                        localStorage.setItem('participant_id',   String(user.id));
+                        sessionStorage.setItem('participant_id', String(user.id));
+                    }
+                    if (user.name) {
+                        localStorage.setItem('participant_name',   user.name);
+                        sessionStorage.setItem('participant_name', user.name);
+                    }
                     if (user.team_code) {
                         sessionStorage.setItem('imposterTeamCode', user.team_code);
                         localStorage.setItem('imposterTeamCode',   user.team_code);
@@ -309,6 +317,10 @@
                     if (user.team_name) {
                         sessionStorage.setItem('imposterTeamName', user.team_name);
                         localStorage.setItem('imposterTeamName',   user.team_name);
+                    }
+                    if (user.role) {
+                        localStorage.setItem('participant_role',   user.role);
+                        sessionStorage.setItem('participant_role', user.role);
                     }
                     sessionStorage.setItem('imposterParticipant', JSON.stringify(user));
                     closeAuthModal();

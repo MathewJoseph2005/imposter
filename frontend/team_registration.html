@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -78,11 +78,7 @@
             margin: 0 0 24px;
         }
 
-        .sidebar-nav {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+        .sidebar-nav { display: flex; flex-direction: column; gap: 10px; }
 
         .nav-btn {
             width: 100%;
@@ -106,21 +102,11 @@
             color: var(--accent);
         }
 
-        .nav-btn:hover {
-            border-color: rgba(0, 240, 255, 0.42);
-        }
+        .nav-btn:hover { border-color: rgba(0, 240, 255, 0.42); }
 
-        .dashboard-content {
-            padding: 26px 24px 20px;
-        }
-
-        .panel-section {
-            display: none;
-        }
-
-        .panel-section.active {
-            display: block;
-        }
+        .dashboard-content { padding: 26px 24px 20px; }
+        .panel-section { display: none; }
+        .panel-section.active { display: block; }
 
         .subtitle {
             text-align: center;
@@ -140,21 +126,9 @@
             font-size: 1rem;
         }
 
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 20px 18px;
-        }
-
-        .field {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .field.full {
-            grid-column: 1 / -1;
-        }
+        .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 18px; }
+        .field { display: flex; flex-direction: column; gap: 8px; }
+        .field.full { grid-column: 1 / -1; }
 
         label {
             font-size: 0.72rem;
@@ -181,13 +155,7 @@
             box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.12);
         }
 
-        .button-row {
-            display: flex;
-            justify-content: center;
-            margin-top: 26px;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
+        .button-row { display: flex; justify-content: center; margin-top: 26px; gap: 12px; flex-wrap: wrap; }
 
         .submit-btn, .secondary-btn {
             border: none;
@@ -214,9 +182,7 @@
             border: 1px solid rgba(255, 255, 255, 0.12);
         }
 
-        .submit-btn:hover, .secondary-btn:hover {
-            transform: translateY(-1px);
-        }
+        .submit-btn:hover, .secondary-btn:hover { transform: translateY(-1px); }
 
         .response-box {
             display: none;
@@ -241,19 +207,9 @@
             color: #ffbfd0;
         }
 
-        .note {
-            color: var(--muted);
-            font-size: 0.88rem;
-            text-align: center;
-            margin-top: 16px;
-        }
+        .note { color: var(--muted); font-size: 0.88rem; text-align: center; margin-top: 16px; }
 
-        .summary-row {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 14px;
-            margin-bottom: 18px;
-        }
+        .summary-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
 
         .summary-box {
             background: rgba(15, 23, 38, 0.8);
@@ -265,23 +221,9 @@
             gap: 8px;
         }
 
-        .summary-label {
-            color: var(--muted);
-            font-size: 0.72rem;
-            letter-spacing: 0.14em;
-            text-transform: uppercase;
-        }
-
-        .summary-value {
-            color: var(--text);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.7rem;
-        }
-
-        .team-list {
-            display: grid;
-            gap: 12px;
-        }
+        .summary-label { color: var(--muted); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; }
+        .summary-value { color: var(--text); font-family: 'Orbitron', sans-serif; font-size: 1.7rem; }
+        .team-list { display: grid; gap: 12px; }
 
         .team-card {
             background: rgba(13, 20, 34, 0.9);
@@ -295,34 +237,10 @@
             background: rgba(50, 18, 26, 0.72);
         }
 
-        .team-card-header {
-            display: flex;
-            justify-content: space-between;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 10px;
-        }
-
-        .team-card-name {
-            font-family: 'Orbitron', sans-serif;
-            color: var(--text);
-            font-size: 1rem;
-            letter-spacing: 0.06em;
-        }
-
-        .team-card-meta {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .team-card-code {
-            color: var(--accent);
-            font-size: 0.8rem;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-        }
+        .team-card-header { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+        .team-card-name { font-family: 'Orbitron', sans-serif; color: var(--text); font-size: 1rem; letter-spacing: 0.06em; }
+        .team-card-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .team-card-code { color: var(--accent); font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; }
 
         .team-badge {
             display: inline-flex;
@@ -336,35 +254,11 @@
             font-weight: 700;
         }
 
-        .team-badge.complete {
-            background: rgba(85, 230, 165, 0.15);
-            color: #b5f5d5;
-            border: 1px solid rgba(85, 230, 165, 0.35);
-        }
+        .team-badge.complete { background: rgba(85, 230, 165, 0.15); color: #b5f5d5; border: 1px solid rgba(85, 230, 165, 0.35); }
+        .team-badge.incomplete { background: rgba(255, 77, 109, 0.12); color: #ffbfd0; border: 1px solid rgba(255, 77, 109, 0.36); }
+        .team-warning { margin-top: 10px; color: #ffbfd0; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 700; }
 
-        .team-badge.incomplete {
-            background: rgba(255, 77, 109, 0.12);
-            color: #ffbfd0;
-            border: 1px solid rgba(255, 77, 109, 0.36);
-        }
-
-        .team-warning {
-            margin-top: 10px;
-            color: #ffbfd0;
-            font-size: 0.8rem;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            font-weight: 700;
-        }
-
-        .team-members {
-            list-style: none;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            padding: 0;
-            margin: 0;
-        }
+        .team-members { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 0; }
 
         .team-members li {
             background: rgba(0, 240, 255, 0.08);
@@ -375,18 +269,9 @@
             font-size: 0.86rem;
         }
 
-        .shuffle-actions {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 14px;
-        }
+        .shuffle-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 
-        .seating-groups {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 14px;
-        }
+        .seating-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
 
         .group-card {
             background: rgba(14, 23, 38, 0.9);
@@ -396,7 +281,7 @@
         }
 
         .group-card h3 {
-            margin: 0 0 10px;
+            margin: 0 0 4px;
             color: var(--accent);
             font-family: 'Orbitron', sans-serif;
             font-size: 0.95rem;
@@ -404,14 +289,12 @@
             text-transform: uppercase;
         }
 
-        .group-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.84rem;
-        }
+        .group-task-label { font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+        .group-task-title { font-size: 0.76rem; color: var(--accent); font-weight: 700; margin-bottom: 10px; letter-spacing: 0.04em; opacity: 0.85; }
 
-        .group-table th,
-        .group-table td {
+        .group-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+
+        .group-table th, .group-table td {
             text-align: left;
             padding: 8px 6px;
             border-bottom: 1px solid rgba(158, 178, 214, 0.12);
@@ -419,22 +302,163 @@
             color: var(--text);
         }
 
-        .group-table th {
-            color: var(--muted);
-            font-size: 0.68rem;
+        .group-table th { color: var(--muted); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; }
+
+        .group-table tr.imposter-row td { color: #ff6b81; font-weight: 700; }
+
+        .imposter-badge {
+            display: inline-block;
+            background: rgba(255, 30, 67, 0.18);
+            border: 1px solid rgba(255, 30, 67, 0.5);
+            color: #ff6b81;
+            font-size: 0.58rem;
             letter-spacing: 0.1em;
+            padding: 1px 5px;
+            border-radius: 3px;
             text-transform: uppercase;
+            margin-left: 5px;
+            vertical-align: middle;
+        }
+
+        .seating-export-row { display: flex; justify-content: flex-end; margin-bottom: 14px; }
+
+        .export-btn {
+            border: 1px solid rgba(85, 230, 165, 0.4);
+            background: rgba(85, 230, 165, 0.08);
+            color: #55e6a5;
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-size: 0.68rem;
+            border-radius: 10px;
+            padding: 10px 18px;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+
+        .export-btn:hover { background: rgba(85, 230, 165, 0.16); box-shadow: 0 0 12px rgba(85, 230, 165, 0.3); }
+
+        /* ── Shuffle Loading Overlay ── */
+        #shuffle-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9000;
+            background: radial-gradient(ellipse at center, #030b1a 0%, #010408 100%);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #shuffle-overlay.active { display: flex; }
+
+        #overlay-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+        .overlay-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 28px;
+            width: min(520px, 90vw);
+            text-align: center;
+        }
+
+        .overlay-logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1.4rem, 4vw, 2rem);
+            font-weight: 900;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--accent);
+            text-shadow: 0 0 20px rgba(0,240,255,0.8), 0 0 60px rgba(0,240,255,0.3);
+            animation: flickerText 3s infinite;
+        }
+
+        @keyframes flickerText {
+            0%,100%{opacity:1} 92%{opacity:1} 93%{opacity:0.4} 94%{opacity:1} 96%{opacity:0.6} 97%{opacity:1}
+        }
+
+        .overlay-step {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(0.75rem, 2vw, 0.92rem);
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--accent);
+            min-height: 1.4em;
+        }
+
+        .overlay-step.glitch { animation: glitchStep 0.25s linear; }
+
+        @keyframes glitchStep {
+            0%  {transform:translateX(0);  opacity:1;   clip-path:inset(0 0 0 0)}
+            20% {transform:translateX(-4px);opacity:0.7;clip-path:inset(10% 0 30% 0)}
+            40% {transform:translateX(4px); opacity:0.9;clip-path:inset(50% 0 5% 0)}
+            60% {transform:translateX(-2px);opacity:0.6;clip-path:inset(20% 0 60% 0)}
+            80% {transform:translateX(2px); opacity:0.8;clip-path:inset(0 0 0 0)}
+            100%{transform:translateX(0);  opacity:1;   clip-path:inset(0 0 0 0)}
+        }
+
+        .overlay-progress-wrap {
+            width: 100%;
+            background: rgba(0,240,255,0.08);
+            border: 1px solid rgba(0,240,255,0.22);
+            border-radius: 999px;
+            height: 8px;
+            overflow: hidden;
+        }
+
+        .overlay-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00f0ff, #4b8cff);
+            border-radius: 999px;
+            box-shadow: 0 0 14px rgba(0,240,255,0.8);
+            transition: width 0.4s ease;
+        }
+
+        .overlay-percent {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            letter-spacing: 0.15em;
+            color: var(--muted);
+        }
+
+        .overlay-success {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            animation: successPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+        }
+
+        @keyframes successPop { from{transform:scale(0.6);opacity:0} to{transform:scale(1);opacity:1} }
+
+        .overlay-success-icon { font-size: 4rem; line-height: 1; }
+
+        .overlay-success-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1rem, 3vw, 1.4rem);
+            font-weight: 900;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--success);
+            text-shadow: 0 0 20px rgba(85,230,165,0.9), 0 0 50px rgba(85,230,165,0.4);
+        }
+
+        .overlay-success-sub {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.72rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--muted);
         }
 
         @media (max-width: 900px) {
-            .dashboard-shell {
-                grid-template-columns: 1fr;
-            }
-
-            .dashboard-sidebar {
-                border-right: none;
-                border-bottom: 1px solid rgba(158, 178, 214, 0.2);
-            }
+            .dashboard-shell { grid-template-columns: 1fr; }
+            .dashboard-sidebar { border-right: none; border-bottom: 1px solid rgba(158, 178, 214, 0.2); }
         }
 
         @media (max-width: 640px) {
@@ -448,6 +472,24 @@
 </head>
 <body>
     <canvas id="space-bg"></canvas>
+
+    <!-- Shuffle Loading Overlay -->
+    <div id="shuffle-overlay">
+        <canvas id="overlay-canvas"></canvas>
+        <div class="overlay-content">
+            <div class="overlay-logo">Imposter Protocol</div>
+            <div class="overlay-step" id="overlay-step">Initializing...</div>
+            <div class="overlay-progress-wrap">
+                <div class="overlay-progress-bar" id="overlay-bar"></div>
+            </div>
+            <div class="overlay-percent" id="overlay-percent">0%</div>
+            <div class="overlay-success" id="overlay-success">
+                <div class="overlay-success-icon">&#9989;</div>
+                <div class="overlay-success-text">Shuffle Complete</div>
+                <div class="overlay-success-sub" id="overlay-success-sub">6 Groups Ready</div>
+            </div>
+        </div>
+    </div>
 
     <div class="page-shell">
         <div class="dashboard-shell">
@@ -470,34 +512,28 @@
                                 <label for="team-name">Team Name</label>
                                 <input id="team-name" name="team_name" type="text" placeholder="Enter team name" required>
                             </div>
-
                             <div class="field full">
                                 <label for="member-1">Participant 1</label>
                                 <input id="member-1" name="member_1" type="text" placeholder="Full name" required>
                             </div>
-
                             <div class="field">
                                 <label for="member-2">Participant 2</label>
                                 <input id="member-2" name="member_2" type="text" placeholder="Full name" required>
                             </div>
-
                             <div class="field">
                                 <label for="member-3">Participant 3</label>
                                 <input id="member-3" name="member_3" type="text" placeholder="Full name" required>
                             </div>
-
                             <div class="field">
                                 <label for="member-4">Participant 4</label>
                                 <input id="member-4" name="member_4" type="text" placeholder="Full name" required>
                             </div>
                         </div>
-
                         <div class="button-row">
                             <button type="submit" class="submit-btn">Register Team</button>
                             <button type="button" class="secondary-btn" onclick="window.location.href='homepage.html'">Return to Login</button>
                         </div>
                     </form>
-
                     <div id="response-box" class="response-box"></div>
                     <p class="note">After registration, participants can sign in from the main homepage using their exact names and the team name.</p>
                 </section>
@@ -528,6 +564,9 @@
 
                 <section id="seating-arrangement" class="panel-section">
                     <h2 class="panel-title">Seating Arrangement</h2>
+                    <div class="seating-export-row">
+                        <button class="export-btn" onclick="exportSeatingPDF()">&#128438; Export PDF</button>
+                    </div>
                     <div id="seating-groups" class="seating-groups"></div>
                 </section>
             </main>
@@ -535,47 +574,134 @@
     </div>
 
     <script>
+        /* ── Space background ── */
         const canvas = document.getElementById('space-bg');
         const ctx = canvas.getContext('2d');
-
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
+        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
-
         const stars = [];
         const colors = ['#ffffff', '#00f0ff', '#ff1e43', '#6b21a8'];
-
         for (let i = 0; i < 140; i++) {
-            stars.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                radius: Math.random() * 2,
-                color: colors[Math.floor(Math.random() * colors.length)],
-                speed: Math.random() * 0.6 + 0.2
-            });
+            stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, radius: Math.random()*2, color: colors[Math.floor(Math.random()*colors.length)], speed: Math.random()*0.6+0.2 });
         }
-
         function animateSpace() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            stars.forEach(star => {
-                ctx.beginPath();
-                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-                ctx.fillStyle = star.color;
-                ctx.fill();
-
-                star.y += star.speed;
-                if (star.y > canvas.height) {
-                    star.y = 0;
-                    star.x = Math.random() * canvas.width;
-                }
-            });
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            stars.forEach(s => { ctx.beginPath(); ctx.arc(s.x,s.y,s.radius,0,Math.PI*2); ctx.fillStyle=s.color; ctx.fill(); s.y+=s.speed; if(s.y>canvas.height){s.y=0;s.x=Math.random()*canvas.width;} });
             requestAnimationFrame(animateSpace);
         }
         animateSpace();
 
+        /* ── Overlay particle system ── */
+        const oc = document.getElementById('overlay-canvas');
+        const octx = oc.getContext('2d');
+        let overlayParticles = [];
+        let overlayAnimating = false;
+
+        function resizeOverlayCanvas() { oc.width = window.innerWidth; oc.height = window.innerHeight; }
+        resizeOverlayCanvas();
+        window.addEventListener('resize', resizeOverlayCanvas);
+
+        function spawnParticles() {
+            overlayParticles = [];
+            for (let i = 0; i < 90; i++) {
+                overlayParticles.push({
+                    x: Math.random() * oc.width,
+                    y: Math.random() * oc.height,
+                    r: Math.random() * 2.2 + 0.4,
+                    vx: (Math.random() - 0.5) * 0.8,
+                    vy: (Math.random() - 0.5) * 0.8,
+                    color: Math.random() > 0.5 ? '#00f0ff' : '#ff1e43',
+                    alpha: Math.random() * 0.6 + 0.2
+                });
+            }
+        }
+
+        function animateOverlay() {
+            if (!overlayAnimating) return;
+            octx.clearRect(0, 0, oc.width, oc.height);
+            overlayParticles.forEach(p => {
+                p.x += p.vx; p.y += p.vy;
+                if (p.x < 0) p.x = oc.width;
+                if (p.x > oc.width) p.x = 0;
+                if (p.y < 0) p.y = oc.height;
+                if (p.y > oc.height) p.y = 0;
+                octx.beginPath();
+                octx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                octx.fillStyle = p.color;
+                octx.globalAlpha = p.alpha;
+                octx.fill();
+                octx.globalAlpha = 1;
+            });
+            requestAnimationFrame(animateOverlay);
+        }
+
+        /* ── Overlay control ── */
+        const overlayEl   = document.getElementById('shuffle-overlay');
+        const stepEl      = document.getElementById('overlay-step');
+        const barEl       = document.getElementById('overlay-bar');
+        const percentEl   = document.getElementById('overlay-percent');
+        const successEl   = document.getElementById('overlay-success');
+        const successSubEl = document.getElementById('overlay-success-sub');
+
+        const STEPS = [
+            { label: 'Initializing Imposter Protocol...', pct: 8  },
+            { label: 'Scanning 24 Participants...',        pct: 25 },
+            { label: 'Creating Random Groups...',          pct: 48 },
+            { label: 'Assigning Imposters...',             pct: 68 },
+            { label: 'Assigning Main Event Tasks...',      pct: 88 },
+        ];
+
+        function setProgress(pct) {
+            barEl.style.width = pct + '%';
+            percentEl.textContent = pct + '%';
+        }
+
+        function setStep(text) {
+            stepEl.classList.remove('glitch');
+            void stepEl.offsetWidth; // reflow to restart animation
+            stepEl.textContent = text;
+            stepEl.classList.add('glitch');
+        }
+
+        function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+        async function runOverlayAnimation() {
+            overlayEl.classList.add('active');
+            successEl.style.display = 'none';
+            stepEl.style.display = 'block';
+            barEl.style.width = '0%';
+            percentEl.textContent = '0%';
+            spawnParticles();
+            overlayAnimating = true;
+            animateOverlay();
+
+            for (const step of STEPS) {
+                setStep(step.label);
+                setProgress(step.pct);
+                await delay(600 + Math.random() * 300);
+            }
+        }
+
+        async function showOverlaySuccess(groupsCreated) {
+            setProgress(100);
+            setStep('');
+            stepEl.style.display = 'none';
+            successSubEl.textContent = groupsCreated + ' Groups Ready';
+            successEl.style.display = 'flex';
+            await delay(2200);
+            overlayAnimating = false;
+            overlayEl.classList.remove('active');
+            octx.clearRect(0, 0, oc.width, oc.height);
+        }
+
+        function hideOverlay() {
+            overlayAnimating = false;
+            overlayEl.classList.remove('active');
+            octx.clearRect(0, 0, oc.width, oc.height);
+        }
+
+        /* ── Dashboard nav ── */
         const form = document.getElementById('team-registration-form');
         const responseBox = document.getElementById('response-box');
         const totalTeamsEl = document.getElementById('total-teams');
@@ -586,94 +712,65 @@
 
         document.querySelectorAll('.nav-btn').forEach((button) => {
             button.addEventListener('click', () => {
-                document.querySelectorAll('.nav-btn').forEach((nav) => nav.classList.remove('active'));
+                document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('active'));
                 button.classList.add('active');
-                document.querySelectorAll('.panel-section').forEach((section) => {
-                    section.classList.toggle('active', section.id === button.dataset.section);
+                document.querySelectorAll('.panel-section').forEach(s => {
+                    s.classList.toggle('active', s.id === button.dataset.section);
                 });
-                if (button.dataset.section === 'seating-arrangement') {
-                    loadSeatingArrangement();
-                }
-                if (button.dataset.section === 'registered-teams') {
-                    loadRegisteredTeams();
-                }
+                if (button.dataset.section === 'seating-arrangement') loadSeatingArrangement();
+                if (button.dataset.section === 'registered-teams') loadRegisteredTeams();
             });
         });
 
         function getShuffleEligibility(teams) {
-            const completeTeams = (teams || []).filter((team) => Array.isArray(team.members) && team.members.length === 4);
-            const canShuffle = teams && teams.length === 6 && completeTeams.length === 6;
-            return { canShuffle, completeTeamsCount: completeTeams.length };
+            const completeTeams = (teams || []).filter(t => Array.isArray(t.members) && t.members.length === 4);
+            return { canShuffle: teams && teams.length === 6 && completeTeams.length === 6, completeTeamsCount: completeTeams.length };
         }
 
         function updateShuffleButtonState(teams) {
             const shuffleButton = document.getElementById('shuffle-all-btn');
             const { canShuffle, completeTeamsCount } = getShuffleEligibility(teams);
-
             shuffleButton.disabled = !canShuffle;
             shuffleButton.style.opacity = canShuffle ? '1' : '0.5';
             shuffleButton.style.cursor = canShuffle ? 'pointer' : 'not-allowed';
-
-            if (!canShuffle) {
-                renderShuffleStatus('Shuffle requires 6 complete teams (24 participants).', 'error');
-            } else {
-                renderShuffleStatus('Ready to shuffle all 6 complete teams.', 'success');
-            }
-
-            if (teams && teams.length !== 6) {
-                renderShuffleStatus(`Shuffle requires 6 complete teams (24 participants). Current teams: ${teams.length}.`, 'error');
-            }
-
-            if (teams && teams.length === 6 && completeTeamsCount !== 6) {
-                renderShuffleStatus(`Shuffle requires 6 complete teams (24 participants). Complete teams: ${completeTeamsCount}/6.`, 'error');
-            }
+            if (!canShuffle) renderShuffleStatus('Shuffle requires 6 complete teams (24 participants).', 'error');
+            else renderShuffleStatus('Ready to shuffle all 6 complete teams.', 'success');
+            if (teams && teams.length !== 6) renderShuffleStatus(`Shuffle requires 6 complete teams (24 participants). Current teams: ${teams.length}.`, 'error');
+            if (teams && teams.length === 6 && completeTeamsCount !== 6) renderShuffleStatus(`Shuffle requires 6 complete teams (24 participants). Complete teams: ${completeTeamsCount}/6.`, 'error');
         }
 
         async function loadRegisteredTeams() {
             try {
                 const response = await fetch('http://localhost:3000/api/registered-teams');
                 const data = await response.json();
-
                 if (!response.ok || !data || data.success !== true) {
                     registeredTeamsListEl.innerHTML = '<div class="team-card"><strong>Unable to load registered teams.</strong></div>';
                     return;
                 }
-
                 const teams = data.teams || [];
                 const totalParticipants = teams.reduce((sum, team) => sum + (team.members || []).length, 0);
-
                 totalTeamsEl.textContent = String(teams.length);
                 totalParticipantsEl.textContent = String(totalParticipants);
-
                 if (teams.length === 0) {
                     registeredTeamsListEl.innerHTML = '<div class="team-card">No real teams registered yet.</div>';
                     updateShuffleButtonState([]);
                     return;
                 }
-
-                registeredTeamsListEl.innerHTML = teams.map((team) => {
+                registeredTeamsListEl.innerHTML = teams.map(team => {
                     const memberCount = (team.members || []).length;
                     const isComplete = memberCount === 4;
-                    const badgeClass = isComplete ? 'complete' : 'incomplete';
-                    const badgeText = isComplete ? '4/4 Members' : `${memberCount}/4 Members`;
-
-                    return `
-                        <div class="team-card ${isComplete ? '' : 'incomplete'}">
-                            <div class="team-card-header">
-                                <span class="team-card-name">${team.team_name}</span>
-                                <span class="team-card-meta">
-                                    <span class="team-card-code">${team.team_code}</span>
-                                    <span class="team-badge ${badgeClass}">${badgeText}</span>
-                                </span>
-                            </div>
-                            <ul class="team-members">
-                                ${(team.members || []).map((member) => `<li>${member}</li>`).join('')}
-                            </ul>
-                            ${isComplete ? '' : '<div class="team-warning">Incomplete Team</div>'}
+                    return `<div class="team-card ${isComplete ? '' : 'incomplete'}">
+                        <div class="team-card-header">
+                            <span class="team-card-name">${team.team_name}</span>
+                            <span class="team-card-meta">
+                                <span class="team-card-code">${team.team_code}</span>
+                                <span class="team-badge ${isComplete ? 'complete' : 'incomplete'}">${isComplete ? '4/4 Members' : memberCount + '/4 Members'}</span>
+                            </span>
                         </div>
-                    `;
+                        <ul class="team-members">${(team.members || []).map(m => `<li>${m}</li>`).join('')}</ul>
+                        ${isComplete ? '' : '<div class="team-warning">Incomplete Team</div>'}
+                    </div>`;
                 }).join('');
-
                 updateShuffleButtonState(teams);
             } catch (error) {
                 registeredTeamsListEl.innerHTML = '<div class="team-card"><strong>Unable to contact the backend.</strong></div>';
@@ -688,115 +785,174 @@
         }
 
         function buildSixGroups(participants) {
-            const groups = Array.from({ length: 6 }, (_, index) => ({
-                groupName: `Group ${index + 1}`,
-                members: []
-            }));
-
-            (participants || []).forEach((participant) => {
-                const text = participant.seating_group || '';
-                const match = text.match(/Group\s*(\d+)/i);
-                if (!match) return; // skip unassigned — do not default to group 1
-                const groupNumber = Number(match[1]);
-                if (groupNumber >= 1 && groupNumber <= 6) {
-                    groups[groupNumber - 1].members.push(participant);
-                }
+            const groups = Array.from({ length: 6 }, (_, i) => ({ groupName: `Group ${i + 1}`, members: [] }));
+            (participants || []).forEach(p => {
+                const match = (p.seating_group || '').match(/Group\s*(\d+)/i);
+                if (!match) return;
+                const n = Number(match[1]);
+                if (n >= 1 && n <= 6) groups[n - 1].members.push(p);
             });
-
             return groups;
         }
+
+        /* cached task titles keyed by group number (populated after shuffle) */
+        let groupTaskMap = {};
 
         async function loadSeatingArrangement() {
             try {
                 const response = await fetch('http://localhost:3000/api/shuffle-layout');
                 const data = await response.json();
-
                 if (!response.ok || !data || data.success !== true) {
                     seatingGroupsEl.innerHTML = '<div class="team-card">Seating arrangement unavailable.</div>';
                     return;
                 }
-
-                // Backend signals not ready: wrong team count, incomplete teams, or shuffle not run yet
                 if (!data.seating_ready || !data.participants || data.participants.length === 0) {
                     seatingGroupsEl.innerHTML = '<div class="team-card">No seating arrangement generated yet. Register 6 complete teams and run Shuffle All Teams.</div>';
                     return;
                 }
-
                 const groups = buildSixGroups(data.participants);
-
-                // Extra client-side guard: every group must have exactly 4 members
-                const allGroupsValid = groups.every((g) => g.members.length === 4);
-                if (!allGroupsValid) {
+                const allValid = groups.every(g => g.members.length === 4);
+                if (!allValid) {
                     seatingGroupsEl.innerHTML = '<div class="team-card">No seating arrangement generated yet. Register 6 complete teams and run Shuffle All Teams.</div>';
                     return;
                 }
-
-                seatingGroupsEl.innerHTML = groups.map((group) => {
-                    const rows = group.members.map((participant) => `
-                            <tr>
-                                <td>${participant.participant_name}</td>
-                                <td>${participant.original_team}</td>
-                                <td>${participant.role}</td>
-                            </tr>
-                        `).join('');
-
-                    return `
-                        <div class="group-card">
-                            <h3>${group.groupName}</h3>
-                            <table class="group-table">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Original Team</th>
-                                        <th>Role</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${rows}
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
-                }).join('');
+                renderSeatingGroups(groups);
             } catch (error) {
                 seatingGroupsEl.innerHTML = '<div class="team-card">Unable to fetch seating layout.</div>';
             }
         }
 
+        function renderSeatingGroups(groups) {
+            seatingGroupsEl.innerHTML = groups.map(group => {
+                const taskTitle = groupTaskMap[group.groupName] || '';
+                // Always render specialists (positions 1-3) before the imposter (position 4)
+                // Use role field as truth — is_imposter boolean may not be reliable
+                const sorted = [...group.members].sort((a, b) => {
+                    const aImp = a.role === 'Imposter' || a.is_imposter === true ? 1 : 0;
+                    const bImp = b.role === 'Imposter' || b.is_imposter === true ? 1 : 0;
+                    return aImp - bImp;
+                });
+                const rows = sorted.map(p => {
+                    const isImp = p.role === 'Imposter' || p.is_imposter === true;
+                    return `<tr class="${isImp ? 'imposter-row' : ''}">
+                        <td>${p.participant_name}${isImp ? '<span class="imposter-badge">Imposter</span>' : ''}</td>
+                        <td>${p.original_team}</td>
+                        <td>${p.role}</td>
+                    </tr>`;
+                }).join('');
+                return `<div class="group-card">
+                    <h3>${group.groupName}</h3>
+                    ${taskTitle ? `<div class="group-task-label">Main Event Task</div><div class="group-task-title">${taskTitle}</div>` : ''}
+                    <table class="group-table">
+                        <thead><tr><th>Name</th><th>Original Team</th><th>Role</th></tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>`;
+            }).join('');
+        }
+
+        /* ── PDF Export ── */
+        function exportSeatingPDF() {
+            const groups = buildSixGroups(
+                Array.from(document.querySelectorAll('#seating-groups .group-card')).flatMap(card => {
+                    // re-parse from rendered DOM
+                    return [];
+                })
+            );
+            // Build a print-friendly page
+            const style = `<style>
+                body{font-family:Arial,sans-serif;padding:20px;background:#fff;color:#000}
+                h1{font-size:1.4rem;margin-bottom:20px}
+                .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+                .gcard{border:1px solid #ccc;border-radius:6px;padding:12px;page-break-inside:avoid}
+                .gcard h2{font-size:0.9rem;margin:0 0 4px;color:#003}
+                .gtask{font-size:0.7rem;color:#555;margin-bottom:8px}
+                table{width:100%;border-collapse:collapse;font-size:0.78rem}
+                th{text-align:left;padding:4px;border-bottom:1px solid #ddd;color:#555}
+                td{padding:4px;border-bottom:1px solid #eee}
+                .imp{color:#c00;font-weight:bold}
+                @media print{.grid{grid-template-columns:repeat(2,1fr)}}
+            </style>`;
+
+            // Collect data from rendered DOM
+            const cards = document.querySelectorAll('#seating-groups .group-card');
+            let cardsHTML = '';
+            cards.forEach(card => {
+                const groupName = card.querySelector('h3')?.textContent || '';
+                const taskTitle = card.querySelector('.group-task-title')?.textContent || '';
+                const rows = Array.from(card.querySelectorAll('tbody tr')).map(tr => {
+                    const tds = tr.querySelectorAll('td');
+                    const isImp = tr.classList.contains('imposter-row');
+                    const name = tds[0]?.textContent.replace('Imposter','').trim() || '';
+                    const team = tds[1]?.textContent || '';
+                    const role = tds[2]?.textContent || '';
+                    return `<tr><td class="${isImp ? 'imp' : ''}">${name}${isImp ? ' ★' : ''}</td><td>${team}</td><td>${role}</td></tr>`;
+                }).join('');
+                cardsHTML += `<div class="gcard"><h2>${groupName}</h2>${taskTitle ? `<div class="gtask">Task: ${taskTitle}</div>` : ''}<table><thead><tr><th>Name</th><th>Team</th><th>Role</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+            });
+
+            if (!cardsHTML) {
+                alert('No seating arrangement to export. Run a shuffle first.');
+                return;
+            }
+
+            const win = window.open('', '_blank');
+            win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Seating Arrangement — Imposter Project</title>${style}</head><body><h1>Seating Arrangement — Imposter Project / ASTRA 11.0</h1><div class="grid">${cardsHTML}</div></body></html>`);
+            win.document.close();
+            win.focus();
+            setTimeout(() => win.print(), 400);
+        }
+
+        /* ── Shuffle trigger ── */
         async function triggerShuffle() {
             const teamData = await fetch('http://localhost:3000/api/registered-teams');
             const teamPayload = await teamData.json();
             const teams = teamPayload && teamPayload.success === true ? (teamPayload.teams || []) : [];
 
-            if (teams.length !== 6 || teams.some((team) => (team.members || []).length !== 4)) {
+            if (teams.length !== 6 || teams.some(t => (t.members || []).length !== 4)) {
                 renderShuffleStatus('Shuffle requires 6 complete teams (24 participants).', 'error');
                 return;
             }
 
-            // Clear previous seating arrangement immediately
-            seatingGroupsEl.innerHTML = '<div class="team-card">Generating new seating arrangement...</div>';
+            // Disable buttons
+            document.getElementById('shuffle-all-btn').disabled = true;
+            document.getElementById('retry-shuffle-btn').disabled = true;
+
+            // Start overlay animation (runs in parallel with the API call)
+            const animPromise = runOverlayAnimation();
 
             try {
                 const response = await fetch('http://localhost:3000/api/start-shuffle', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'Content-Type': 'application/json' }
                 });
-
                 const data = await response.json();
 
+                // Wait for animation to finish its steps before showing result
+                await animPromise;
+
                 if (!response.ok || !data || data.success !== true) {
+                    hideOverlay();
                     renderShuffleStatus(data && data.message ? data.message : 'Shuffle failed.', 'error');
                     seatingGroupsEl.innerHTML = '<div class="team-card">Shuffle failed. Try again.</div>';
-                    return;
-                }
+                } else {
+                    await showOverlaySuccess(data.groups_created || 6);
+                    renderShuffleStatus(`Shuffle completed. ${data.groups_created || 0} groups created.${data.assignments_written ? ' Tasks assigned.' : ''}`, 'success');
 
-                renderShuffleStatus(`Shuffle completed successfully. ${data.groups_created || 0} groups created.`, 'success');
-                await loadSeatingArrangement();
+                    // Auto-switch to Seating Arrangement tab
+                    document.querySelectorAll('.nav-btn').forEach(n => n.classList.remove('active'));
+                    document.querySelector('[data-section="seating-arrangement"]').classList.add('active');
+                    document.querySelectorAll('.panel-section').forEach(s => s.classList.toggle('active', s.id === 'seating-arrangement'));
+                    await loadSeatingArrangement();
+                }
             } catch (error) {
+                await animPromise;
+                hideOverlay();
                 renderShuffleStatus('Unable to reach the shuffle endpoint.', 'error');
                 seatingGroupsEl.innerHTML = '<div class="team-card">Unable to fetch seating layout.</div>';
+            } finally {
+                document.getElementById('shuffle-all-btn').disabled = false;
+                document.getElementById('retry-shuffle-btn').disabled = false;
             }
         }
 
@@ -805,14 +961,13 @@
 
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
-
             const teamName = document.getElementById('team-name').value.trim();
             const members = [
                 document.getElementById('member-1').value,
                 document.getElementById('member-2').value,
                 document.getElementById('member-3').value,
                 document.getElementById('member-4').value
-            ].map((value) => value.trim()).filter(Boolean);
+            ].map(v => v.trim()).filter(Boolean);
 
             responseBox.className = 'response-box';
             responseBox.style.display = 'none';
@@ -834,17 +989,10 @@
             try {
                 const response = await fetch('http://localhost:3000/api/register-team', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        team_name: teamName,
-                        members: members
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ team_name: teamName, members: members })
                 });
-
                 const data = await response.json();
-
                 if (response.ok && data && data.success === true) {
                     responseBox.className = 'response-box success';
                     responseBox.innerHTML = `Team registered successfully.<br><strong>Team Code:</strong> ${data.team_code}<br>Participants can now authenticate from the homepage using the exact team and participant names.`;
@@ -853,7 +1001,6 @@
                     await loadRegisteredTeams();
                     return;
                 }
-
                 responseBox.className = 'response-box error';
                 responseBox.innerHTML = data && data.message ? data.message : 'Team registration failed.';
                 responseBox.style.display = 'block';

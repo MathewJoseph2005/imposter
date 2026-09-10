@@ -223,8 +223,20 @@ app.get('/api/shuffle-layout', async (req, res) => {
       participant_name: participant.participant_name,
       original_team: teamMap[participant.team_id] || 'Unknown Team',
       seating_group: participant.shuffle_group,
-      role: participant.player_role || (participant.is_imposter ? 'Imposter' : 'Specialist')
+      // Use player_role as primary truth — is_imposter boolean may be null/unset in some DB rows
+      is_imposter: participant.player_role === 'Imposter' || participant.is_imposter === true,
+      role: (participant.player_role === 'Imposter' || participant.is_imposter === true) ? 'Imposter' : 'Specialist'
     }));
+
+    // Sort: within each group, specialists come first (rows 1-3), imposter always last (row 4).
+    seatRows.sort((a, b) => {
+      // Primary: group name (Group 1, Group 2 … Group 6 — numeric sort)
+      const gA = parseInt((a.seating_group || '').replace(/\D/g, ''), 10) || 0;
+      const gB = parseInt((b.seating_group || '').replace(/\D/g, ''), 10) || 0;
+      if (gA !== gB) return gA - gB;
+      // Secondary: specialists (is_imposter=false → 0) before imposter (true → 1)
+      return (a.is_imposter ? 1 : 0) - (b.is_imposter ? 1 : 0);
+    });
 
     return res.status(200).json({
       success: true,
@@ -334,127 +346,341 @@ app.post('/api/start-shuffle', async (req, res) => {
       return res.status(400).json({ success: false, message: 'No teams registered.' });
     }
 
+    // ── Validate: exactly 6 complete teams ────────────────────────────────────
     const teamMap = {};
-    allTeams.forEach((team) => {
-      teamMap[team.id] = team;
-    });
+    allTeams.forEach((team) => { teamMap[team.id] = team; });
 
     const participantsByTeam = {};
-    allParticipants.forEach((participant) => {
-      if (!participantsByTeam[participant.team_id]) {
-        participantsByTeam[participant.team_id] = [];
-      }
-      participantsByTeam[participant.team_id].push(participant);
+    allParticipants.forEach((p) => {
+      if (!participantsByTeam[p.team_id]) participantsByTeam[p.team_id] = [];
+      participantsByTeam[p.team_id].push(p);
     });
 
     const teamIds = Object.keys(participantsByTeam);
-    const selectedImposters = [];
-
-    for (const teamId of teamIds) {
-      const teamMembers = [...participantsByTeam[teamId]].sort(() => Math.random() - 0.5);
-      if (teamMembers.length === 0) {
-        continue;
-      }
-
-      const imposter = teamMembers[0];
-      selectedImposters.push(imposter);
-    }
-
-    if (selectedImposters.length === 0) {
+    if (teamIds.length !== 6 || teamIds.some((tid) => participantsByTeam[tid].length !== 4)) {
       return res.status(400).json({
         success: false,
-        message: 'No participants available for shuffle.'
+        message: 'Exactly 6 teams with 4 members each are required to run the shuffle.'
       });
     }
 
-    const imposterIds = new Set(selectedImposters.map((member) => member.id));
-    const remainingParticipants = allParticipants.filter((participant) => !imposterIds.has(participant.id));
+    // ── Step A: Pick exactly 1 random imposter per original team ─────────────
+    // Shuffle each team's member list and take the first element as imposter.
+    const imposters = [];
+    const specialistsByTeam = {};   // team_id → [3 remaining specialists]
 
-    const groups = Array.from({ length: selectedImposters.length }, (_, index) => ({
-      groupName: `Group ${index + 1}`,
-      imposter: selectedImposters[index],
-      members: [selectedImposters[index]]
+    for (const teamId of teamIds) {
+      const shuffled = [...participantsByTeam[teamId]].sort(() => Math.random() - 0.5);
+      imposters.push(shuffled[0]);
+      specialistsByTeam[teamId] = shuffled.slice(1);   // the other 3
+    }
+
+    // ── Step B: Shuffle imposters into random group order ─────────────────────
+    const shuffledImposters = [...imposters].sort(() => Math.random() - 0.5);
+
+    // ── Step C: Build 6 groups — each starts empty (no pre-seeded imposter) ──
+    // We'll assign specialists first, then place each imposter at the end.
+    const groups = Array.from({ length: 6 }, (_, i) => ({
+      groupName:  `Group ${i + 1}`,
+      imposter:   shuffledImposters[i],
+      specialists: []              // will hold exactly 3 specialists
     }));
 
+    // Flatten all 18 specialists into one pool
+    const allSpecialists = [];
+    for (const teamId of teamIds) {
+      allSpecialists.push(...specialistsByTeam[teamId]);
+    }
+
+    // ── Step D: Assign specialists (retry loop, up to 500 attempts) ───────────
+    // Rule: a specialist must not share an original team with the group's imposter
+    //       OR with any other specialist already in that group.
     let assigned = false;
-    let attempt = 0;
+    let attempt  = 0;
 
-    while (!assigned && attempt < 200) {
-      attempt += 1;
+    while (!assigned && attempt < 500) {
+      attempt++;
 
-      const workingGroups = groups.map((group) => ({
-        groupName: group.groupName,
-        imposter: group.imposter,
-        members: [group.imposter]
+      const working = groups.map((g) => ({
+        groupName:   g.groupName,
+        imposter:    g.imposter,
+        specialists: []
       }));
 
-      const specialists = [...remainingParticipants].sort(() => Math.random() - 0.5);
-      let validLayout = true;
+      const pool = [...allSpecialists].sort(() => Math.random() - 0.5);
+      let valid  = true;
 
-      for (const specialist of specialists) {
-        const eligibleGroups = workingGroups.filter((group) => {
-          const hasSpace = group.members.length < 4;
-          const sameTeamAsImposter = group.imposter.team_id === specialist.team_id;
-          const sameTeamAlreadyPresent = group.members.some((member) => member.team_id === specialist.team_id);
-          return hasSpace && !sameTeamAsImposter && !sameTeamAlreadyPresent;
+      for (const specialist of pool) {
+        // Eligible groups: have space (< 3 specialists) AND no team conflict
+        const eligible = working.filter((wg) => {
+          if (wg.specialists.length >= 3) return false;
+          if (wg.imposter.team_id === specialist.team_id) return false;
+          if (wg.specialists.some((s) => s.team_id === specialist.team_id)) return false;
+          return true;
         });
 
-        if (eligibleGroups.length === 0) {
-          validLayout = false;
-          break;
-        }
+        if (eligible.length === 0) { valid = false; break; }
 
-        const chosenGroup = eligibleGroups[Math.floor(Math.random() * eligibleGroups.length)];
-        chosenGroup.members.push(specialist);
+        const chosen = eligible[Math.floor(Math.random() * eligible.length)];
+        chosen.specialists.push(specialist);
       }
 
-      if (validLayout && workingGroups.every((group) => group.members.length === 4)) {
+      if (valid && working.every((wg) => wg.specialists.length === 3)) {
         assigned = true;
-        groups.splice(0, groups.length, ...workingGroups);
+        working.forEach((wg, i) => { groups[i].specialists = wg.specialists; });
       }
     }
 
     if (!assigned) {
       return res.status(400).json({
         success: false,
-        message: 'Unable to create a valid seating arrangement for all teams.'
+        message: 'Unable to create a valid seating arrangement after 500 attempts. This should not happen with 6 teams of 4. Check for duplicate team memberships.'
       });
     }
 
-    const updates = [];
-    groups.forEach((group) => {
-      group.members.forEach((member) => {
-        updates.push({
-          id: member.id,
-          is_imposter: member.id === group.imposter.id,
-          shuffle_group: group.groupName,
-          player_role: member.id === group.imposter.id ? 'Imposter' : 'Specialist'
-        });
-      });
-    });
+    // ── Step 1: Write participants table (is_imposter, shuffle_group, player_role) ──
+    for (const group of groups) {
+      // Specialists
+      for (const member of group.specialists) {
+        const { error: updateError } = await supabase
+          .from('participants')
+          .update({
+            is_imposter:   false,
+            shuffle_group: group.groupName,
+            player_role:   'Specialist'
+          })
+          .eq('id', member.id);
 
-    for (const update of updates) {
-      const { error: updateError } = await supabase
+        if (updateError) {
+          return res.status(500).json({ success: false, message: updateError.message });
+        }
+      }
+
+      // Imposter
+      const { error: impUpdateError } = await supabase
         .from('participants')
         .update({
-          is_imposter: update.is_imposter,
-          shuffle_group: update.shuffle_group,
-          player_role: update.player_role
+          is_imposter:   true,
+          shuffle_group: group.groupName,
+          player_role:   'Imposter'
         })
-        .eq('id', update.id);
+        .eq('id', group.imposter.id);
 
-      if (updateError) {
-        return res.status(500).json({ success: false, message: updateError.message });
+      if (impUpdateError) {
+        return res.status(500).json({ success: false, message: impUpdateError.message });
       }
     }
 
+    // ── Step 2: Load main_event_tasks ────────────────────────────────────────
+    const { data: tasks, error: tasksError } = await supabase
+      .from('main_event_tasks')
+      .select('*')
+      .order('task_number', { ascending: true });
+
+    if (tasksError || !tasks || tasks.length < 3) {
+      return res.status(200).json({
+        success: true,
+        imposters_selected: 6,
+        groups_created:     6,
+        assignments_written: false,
+        assignments_note:   'main_event_tasks table missing or empty — run supabase_migration.sql first.'
+      });
+    }
+
+    // ── Step 3: Clear previous assignments ───────────────────────────────────
+    const { error: deleteError } = await supabase
+      .from('main_event_assignments')
+      .delete()
+      .neq('id', 0);
+
+    if (deleteError) {
+      return res.status(500).json({ success: false, message: deleteError.message });
+    }
+
+    // ── Step 4: Build assignment rows ─────────────────────────────────────────
+    // Task mapping: Groups 1 & 4 → Task 1, Groups 2 & 5 → Task 2, Groups 3 & 6 → Task 3
+    const taskForGroup = (groupName) => {
+      const match   = groupName.match(/\d+/);
+      const groupNum = match ? parseInt(match[0], 10) : 1;
+      const taskNum  = ((groupNum - 1) % 3) + 1;
+      return tasks.find((t) => t.task_number === taskNum) || tasks[0];
+    };
+
+    // Slot data lookup — specialists get person1/2/3 work; imposter ALWAYS gets person4_secret
+    const slotData = (task, slot) => {
+      const map = {
+        1: { role_name: task.person1_title, work_description: task.person1_work },
+        2: { role_name: task.person2_title, work_description: task.person2_work },
+        3: { role_name: task.person3_title, work_description: task.person3_work },
+        4: { role_name: task.person4_title, work_description: task.person4_secret }
+      };
+      return map[slot] || map[1];
+    };
+
+    const assignmentRows = [];
+
+    for (const group of groups) {
+      const task = taskForGroup(group.groupName);
+
+      // Specialists → slots 1, 2, 3  (in their shuffled order within this group)
+      group.specialists.forEach((member, idx) => {
+        const slot = idx + 1;   // 1, 2, or 3
+        const sd   = slotData(task, slot);
+        const originalTeam = (teamMap[member.team_id] || {}).team_name || 'Unknown';
+
+        assignmentRows.push({
+          participant_id:    member.id,
+          participant_name:  member.participant_name,
+          original_team:     originalTeam,
+          shuffled_group:    group.groupName,
+          task_number:       task.task_number,
+          task_title:        task.task_title,
+          task_description:  task.task_description,
+          person_slot:       slot,
+          role_name:         sd.role_name,
+          work_description:  sd.work_description,
+          is_imposter:       false,
+          github_repo:       null,
+          submission_status: 'Pending',
+          submitted_at:      null,
+          ai_score:          null
+        });
+      });
+
+      // Imposter → always slot 4
+      const imp      = group.imposter;
+      const impSd    = slotData(task, 4);
+      const impTeam  = (teamMap[imp.team_id] || {}).team_name || 'Unknown';
+
+      assignmentRows.push({
+        participant_id:    imp.id,
+        participant_name:  imp.participant_name,
+        original_team:     impTeam,
+        shuffled_group:    group.groupName,
+        task_number:       task.task_number,
+        task_title:        task.task_title,
+        task_description:  task.task_description,
+        person_slot:       4,
+        role_name:         impSd.role_name,
+        work_description:  impSd.work_description,   // person4_secret
+        is_imposter:       true,
+        github_repo:       null,
+        submission_status: 'Pending',
+        submitted_at:      null,
+        ai_score:          null
+      });
+    }
+
+    const { error: insertError } = await supabase
+      .from('main_event_assignments')
+      .insert(assignmentRows);
+
+    if (insertError) {
+      return res.status(500).json({ success: false, message: insertError.message });
+    }
+
     return res.status(200).json({
-      success: true,
-      imposters_selected: selectedImposters.length,
-      groups_created: groups.length
+      success:             true,
+      imposters_selected:  6,
+      groups_created:      6,
+      assignments_written: true
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message || 'Shuffle could not be started.' });
+  }
+});
+
+// ── GET /api/my-assignment/:participantId ────────────────────────────────────
+// Returns the logged-in participant's task assignment.
+// participantId is a UUID string — never parse as integer.
+app.get('/api/my-assignment/:participantId', async (req, res) => {
+  try {
+    const participantId = String(req.params.participantId || '').trim();
+
+    if (!participantId) {
+      return res.status(400).json({ success: false, message: 'Valid participant_id is required.' });
+    }
+
+    const { data, error } = await supabase
+      .from('main_event_assignments')
+      .select(
+        'participant_id, participant_name, original_team, shuffled_group, ' +
+        'task_number, task_title, task_description, ' +
+        'person_slot, role_name, work_description, is_imposter, ' +
+        'github_repo, submission_status, submitted_at, ai_score'
+      )
+      .eq('participant_id', participantId)
+      .maybeSingle();
+
+    if (error) {
+      return res.status(500).json({ success: false, message: error.message });
+    }
+
+    if (!data) {
+      return res.status(404).json({
+        success: false,
+        message: 'No assignment found. The coordinator may not have run the shuffle yet.'
+      });
+    }
+
+    return res.status(200).json({ success: true, assignment: data });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message || 'Failed to fetch assignment.' });
+  }
+});
+
+// ── POST /api/submit-github ──────────────────────────────────────────────────
+// Saves a participant's GitHub repository link into their assignment record.
+// Prevents duplicate submissions.
+// participant_id is a UUID string — never parse as integer.
+app.post('/api/submit-github', async (req, res) => {
+  try {
+    const participant_id = String(req.body?.participant_id || '').trim();
+    const github_repo    = normalizeGitHubUrl(req.body?.github_repo);
+
+    if (!participant_id) {
+      return res.status(400).json({ success: false, message: 'participant_id is required.' });
+    }
+
+    if (!github_repo || !validGitHubUrl(github_repo)) {
+      return res.status(400).json({ success: false, message: 'Valid GitHub repository URL is required.' });
+    }
+
+    // Check assignment exists and has not already been submitted
+    const { data: existing, error: fetchError } = await supabase
+      .from('main_event_assignments')
+      .select('participant_id, submission_status')
+      .eq('participant_id', participant_id)
+      .maybeSingle();
+
+    if (fetchError) {
+      return res.status(500).json({ success: false, message: fetchError.message });
+    }
+
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Assignment not found for this participant.' });
+    }
+
+    if (existing.submission_status === 'Submitted') {
+      return res.status(409).json({ success: false, message: 'You have already submitted. Only one submission is allowed.' });
+    }
+
+    const { error: updateError } = await supabase
+      .from('main_event_assignments')
+      .update({
+        github_repo,
+        submission_status: 'Submitted',
+        submitted_at:      new Date().toISOString()
+      })
+      .eq('participant_id', participant_id);
+
+    if (updateError) {
+      return res.status(500).json({ success: false, message: updateError.message });
+    }
+
+    return res.status(200).json({ success: true, message: 'GitHub repository submitted successfully.' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message || 'Submission failed.' });
   }
 });
 
