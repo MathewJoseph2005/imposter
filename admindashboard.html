@@ -43,13 +43,13 @@
         
         <nav class="flex-1 p-4 space-y-1.5 overflow-y-auto font-orbitron text-xs">
             <button onclick="switchTab('overview')" id="nav-overview" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all bg-crimson-600 text-white shadow-lg shadow-crimson-600/30">
-                📊 Overview & Event Headings
+                📊 Overview
             </button>
             <button onclick="switchTab('submissions')" id="nav-submissions" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardgray hover:text-gray-200">
-                👥 Participants & Shuffling Grading
+                👥 Participants
             </button>
             <button onclick="switchTab('leaderboard')" id="nav-leaderboard" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardgray hover:text-gray-200">
-                🏆 Original Team Podium (1st, 2nd, 3rd)
+                🏆 Original Team Podium
             </button>
             <button onclick="switchTab('visibility')" id="nav-visibility" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardgray hover:text-gray-200">
                 👁️ Event Flow & Gating Toggle
@@ -58,7 +58,7 @@
 
         <div class="p-4 border-t border-bordergray bg-black/50 text-xs font-orbitron">
             <div class="flex items-center justify-between text-gray-400 mb-1">
-                <span>Active Modules Status</span>
+                <span>Modules Status</span>
                 <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
             </div>
             <div id="sidebar-active-event" class="text-crimson-500 font-bold truncate">Imposter Project (Open)</div>
@@ -70,16 +70,33 @@
         
         <!-- Header -->
         <header class="h-20 border-b border-bordergray bg-charcoal/90 backdrop-blur px-8 flex items-center justify-between sticky top-0 z-10">
-            <h2 id="header-title" class="text-xl font-orbitron font-bold tracking-wide text-gray-200 uppercase">Overview & Accordion Preview</h2>
-            <div id="sequence-badge" class="px-4 py-1.5 rounded-full text-xs font-orbitron font-semibold flex items-center gap-2 bg-crimson-600/20 text-rose-400 border border-crimson-600/40">
-                🔒 AI-Only (Imposter/FizzBuzz) & Manual-Only (Code/Sherlock/Drawing)
-            </div>
+            <h2 id="header-title" class="text-xl font-orbitron font-bold tracking-wide text-gray-200 uppercase">Overview</h2>
+            <div class="text-xs font-orbitron text-gray-400">Master Admin Workspace</div>
         </header>
 
         <!-- Dynamic Content Area -->
         <div class="p-8 max-w-7xl mx-auto w-full space-y-6">
 
-            <!-- TAB 1: OVERVIEW WITH SORTED EVENT HEADINGS & TEAMS -->
+            <!-- SINGLE GLOBAL STOPWATCH WIDGET -->
+            <div class="bg-cardgray border border-bordergray rounded-2xl p-5 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-xl bg-crimson-600/20 border border-crimson-600/40 flex items-center justify-center text-crimson-500 font-orbitron font-bold">⏱️</div>
+                    <div>
+                        <h3 class="text-sm font-orbitron font-bold text-white uppercase tracking-wider">Stopwatch</h3>
+                    </div>
+                </div>
+                <div class="flex items-center gap-6 bg-black/60 border border-bordergray px-6 py-3 rounded-xl">
+                    <div class="text-2xl font-mono font-bold text-cyan-400 tracking-widest" id="stopwatch-display">00:00:00</div>
+                    <div class="flex items-center gap-2 font-orbitron text-xs">
+                        <button onclick="startStopwatch()" class="px-3 py-1.5 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white rounded-lg border border-emerald-500/30 transition-all">Start</button>
+                        <button onclick="stopStopwatch()" class="px-3 py-1.5 bg-amber-600/20 text-amber-400 hover:bg-amber-600 hover:text-white rounded-lg border border-amber-500/30 transition-all">Stop</button>
+                        <button onclick="resetStopwatch()" class="px-3 py-1.5 bg-rose-600/20 text-rose-400 hover:bg-rose-600 hover:text-white rounded-lg border border-rose-500/30 transition-all">Reset</button>
+                        <button onclick="restartStopwatch()" class="px-3 py-1.5 bg-cyan-600/20 text-cyan-400 hover:bg-cyan-600 hover:text-white rounded-lg border border-cyan-500/30 transition-all">Restart</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 1: OVERVIEW -->
             <div id="tab-overview" class="tab-content grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                 
                 <!-- Left 2 Columns: Sorted Event Headings & Team Hierarchies -->
@@ -133,29 +150,16 @@
 
             </div>
 
-            <!-- TAB 2: PARTICIPANTS & GRADING -->
+            <!-- TAB 2: PARTICIPANTS -->
             <div id="tab-submissions" class="tab-content hidden space-y-8">
-                <div class="bg-cardgray border border-bordergray p-6 rounded-2xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div>
-                        <h3 class="text-base font-orbitron font-bold text-white">Participants & Shuffling Grading Panel</h3>
-                        <p class="text-sm text-gray-400 mt-1">Sorted by Event Headings, then Teams, adapting input fields dynamically based on AI-Only or Manual-Only rules.</p>
-                    </div>
-                    <button onclick="openManualModal()" class="bg-crimson-600 hover:bg-crimson-700 text-white font-orbitron text-xs px-5 py-3 rounded-xl font-bold transition-all shadow-lg shadow-crimson-600/30 whitespace-nowrap">+ Add Participant Record</button>
-                </div>
-
                 <!-- Event Headings Container -->
                 <div id="grading-events-container" class="space-y-8">
                     <!-- Injected dynamically via JS -->
                 </div>
             </div>
 
-            <!-- TAB 3: ORIGINAL TEAM PODIUM (1ST, 2ND, 3RD) -->
+            <!-- TAB 3: ORIGINAL TEAM PODIUM -->
             <div id="tab-leaderboard" class="tab-content hidden space-y-6">
-                <div class="text-center max-w-xl mx-auto space-y-2">
-                    <h3 class="text-2xl font-orbitron font-bold text-white tracking-widest">ORIGINAL TEAM PRIZE PODIUM</h3>
-                    <p class="text-sm text-gray-400 font-orbitron">Final prizes distributed to registered teams based on aggregated scores (Max 500 across all 5 events).</p>
-                </div>
-
                 <div id="podium-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
                     <!-- Injected via JS -->
                 </div>
@@ -163,12 +167,7 @@
 
             <!-- TAB 4: EVENT FLOW & GATING TOGGLE -->
             <div id="tab-visibility" class="tab-content hidden space-y-6">
-                <div class="bg-cardgray border border-bordergray rounded-2xl p-8 max-w-2xl shadow-xl space-y-6">
-                    <div>
-                        <h3 class="text-lg font-orbitron font-bold text-white mb-2">Event Flow & Instant Gating Toggles</h3>
-                        <p class="text-sm text-gray-400">Toggle switches instantly open or restrict access to each event module for participants.</p>
-                    </div>
-
+                <div class="bg-cardgray border border-bordergray rounded-2xl p-8 max-w-2xl shadow-xl space-y-6 mx-auto">
                     <div class="space-y-4" id="event-gating-list">
                         <!-- Injected via JS -->
                     </div>
@@ -237,6 +236,52 @@
 
     <!-- Application Script Engine -->
     <script>
+        // Stopwatch Engine Variables
+        let stopwatchInterval = null;
+        let stopwatchSeconds = 0;
+
+        function startStopwatch() {
+            if (!stopwatchInterval) {
+                stopwatchInterval = setInterval(() => {
+                    stopwatchSeconds++;
+                    updateStopwatchDisplay();
+                }, 1000);
+            }
+        }
+
+        function stopStopwatch() {
+            clearInterval(stopwatchInterval);
+            stopwatchInterval = null;
+        }
+
+        function resetStopwatch() {
+            stopwatch();
+            stopwatchSeconds = 0;
+            updateStopwatchDisplay();
+        }
+
+        function restartStopwatch() {
+            stopwatch();
+            stopwatchSeconds = 0;
+            updateStopwatchDisplay();
+            startStopwatch();
+        }
+
+        function stopwatch() {
+            clearInterval(stopwatchInterval);
+            stopwatchInterval = null;
+        }
+
+        function updateStopwatchDisplay() {
+            let hrs = Math.floor(stopwatchSeconds / 3600);
+            let mins = Math.floor((stopwatchSeconds % 3600) / 60);
+            let secs = stopwatchSeconds % 60;
+            document.getElementById('stopwatch-display').innerText = 
+                String(hrs).padStart(2, '0') + ":" + 
+                String(mins).padStart(2, '0') + ":" + 
+                String(secs).padStart(2, '0');
+        }
+
         const eventsList = [
             { id: 1, name: 'Imposter Project', type: 'AI', isOpen: true },
             { id: 2, name: 'FizzBuzz', type: 'AI', isOpen: false },
@@ -263,9 +308,9 @@
             document.getElementById(`nav-${tabId}`).className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-crimson-600 text-white shadow-lg shadow-crimson-600/30 transition-all";
 
             const titles = {
-                'overview': 'Overview & Event Headings',
-                'submissions': 'Participants & Shuffling Grading',
-                'leaderboard': 'Original Team Podium (1st, 2nd, 3rd)',
+                'overview': 'Overview',
+                'submissions': 'Participants',
+                'leaderboard': 'Original Team Podium',
                 'visibility': 'Event Flow & Gating Toggle'
             };
             document.getElementById('header-title').innerText = titles[tabId];
@@ -288,7 +333,6 @@
             }
         }
 
-        // Handle dynamic modal field toggles based on event type
         function handleEventTypeChange() {
             let eventName = document.getElementById('manual-event').value;
             let evObj = eventsList.find(e => e.name === eventName);
@@ -408,7 +452,7 @@
             });
         }
 
-        // 2. Render Participants & Grading Panel
+        // 2. Render Participants Panel
         function renderGradingEventsPanel() {
             let container = document.getElementById('grading-events-container');
             container.innerHTML = '';
