@@ -471,42 +471,40 @@ app.post('/api/start-shuffle', async (req, res) => {
       }
     }
 
-    // ── Step 2: Load main_event_tasks ────────────────────────────────────────
+    // ── Step 2: Load main_event_tasks (optional — fallback if missing) ────────
     const { data: tasks, error: tasksError } = await supabase
       .from('main_event_tasks')
       .select('*')
       .order('task_number', { ascending: true });
 
-    if (tasksError || !tasks || tasks.length < 3) {
-      return res.status(200).json({
-        success: true,
-        imposters_selected: 6,
-        groups_created:     6,
-        assignments_written: false,
-        assignments_note:   'main_event_tasks table missing or empty — run supabase_migration.sql first.'
-      });
-    }
+    console.log('[shuffle] tasks fetched:', tasks ? tasks.length : 0, tasksError ? 'ERR:' + tasksError.message : '');
 
-    // ── Step 3: Clear previous assignments ───────────────────────────────────
-    const { error: deleteError } = await supabase
-      .from('main_event_assignments')
-      .delete()
-      .neq('id', 0);
+    // Build a task lookup — works with 0, 1, 2, or 3 tasks.
+    // If a task is missing we use a placeholder so the insert always runs.
+    const taskByNumber = {};
+    (tasks || []).forEach((t) => { taskByNumber[t.task_number] = t; });
 
-    if (deleteError) {
-      return res.status(500).json({ success: false, message: deleteError.message });
-    }
+    const fallbackTask = (num) => ({
+      task_number:      num,
+      task_title:       `Task ${num}`,
+      task_description: `Main event task ${num}. Details to be announced.`,
+      person1_title: 'Role 1', person1_work: 'Work assigned by coordinator.',
+      person2_title: 'Role 2', person2_work: 'Work assigned by coordinator.',
+      person3_title: 'Role 3', person3_work: 'Work assigned by coordinator.',
+      person4_title: 'The Imposter', person4_secret: 'Your secret objective will be revealed by the coordinator.'
+    });
 
-    // ── Step 4: Build assignment rows ─────────────────────────────────────────
+    const getTask = (num) => taskByNumber[num] || fallbackTask(num);
+
     // Task mapping: Groups 1 & 4 → Task 1, Groups 2 & 5 → Task 2, Groups 3 & 6 → Task 3
     const taskForGroup = (groupName) => {
-      const match   = groupName.match(/\d+/);
+      const match    = groupName.match(/\d+/);
       const groupNum = match ? parseInt(match[0], 10) : 1;
       const taskNum  = ((groupNum - 1) % 3) + 1;
-      return tasks.find((t) => t.task_number === taskNum) || tasks[0];
+      return getTask(taskNum);
     };
 
-    // Slot data lookup — specialists get person1/2/3 work; imposter ALWAYS gets person4_secret
+    // Slot data — specialists get person1/2/3 work; imposter ALWAYS gets person4_secret
     const slotData = (task, slot) => {
       const map = {
         1: { role_name: task.person1_title, work_description: task.person1_work },
@@ -517,14 +515,28 @@ app.post('/api/start-shuffle', async (req, res) => {
       return map[slot] || map[1];
     };
 
+    // ── Step 3: Delete all previous assignments ───────────────────────────────
+    // Use gte on created_at (universal — works for both UUID and SERIAL id columns)
+    const { error: deleteError } = await supabase
+      .from('main_event_assignments')
+      .delete()
+      .gte('created_at', '1970-01-01T00:00:00.000Z');
+
+    if (deleteError) {
+      console.error('[shuffle] delete assignments error:', deleteError);
+      // Non-fatal if table is empty — log and continue
+      console.warn('[shuffle] continuing despite delete error');
+    }
+
+    // ── Step 4: Build 24 assignment rows (3 specialists + 1 imposter per group) ─
     const assignmentRows = [];
 
     for (const group of groups) {
       const task = taskForGroup(group.groupName);
 
-      // Specialists → slots 1, 2, 3  (in their shuffled order within this group)
+      // Specialists → slots 1, 2, 3
       group.specialists.forEach((member, idx) => {
-        const slot = idx + 1;   // 1, 2, or 3
+        const slot = idx + 1;
         const sd   = slotData(task, slot);
         const originalTeam = (teamMap[member.team_id] || {}).team_name || 'Unknown';
 
@@ -548,9 +560,9 @@ app.post('/api/start-shuffle', async (req, res) => {
       });
 
       // Imposter → always slot 4
-      const imp      = group.imposter;
-      const impSd    = slotData(task, 4);
-      const impTeam  = (teamMap[imp.team_id] || {}).team_name || 'Unknown';
+      const imp     = group.imposter;
+      const impSd   = slotData(task, 4);
+      const impTeam = (teamMap[imp.team_id] || {}).team_name || 'Unknown';
 
       assignmentRows.push({
         participant_id:    imp.id,
@@ -562,7 +574,7 @@ app.post('/api/start-shuffle', async (req, res) => {
         task_description:  task.task_description,
         person_slot:       4,
         role_name:         impSd.role_name,
-        work_description:  impSd.work_description,   // person4_secret
+        work_description:  impSd.work_description,
         is_imposter:       true,
         github_repo:       null,
         submission_status: 'Pending',
@@ -571,24 +583,167 @@ app.post('/api/start-shuffle', async (req, res) => {
       });
     }
 
-    const { error: insertError } = await supabase
+    console.log('[shuffle] inserting', assignmentRows.length, 'assignment rows');
+    console.log('[shuffle] first row sample:', JSON.stringify(assignmentRows[0], null, 2));
+
+    const { data: insertedData, error: insertError } = await supabase
       .from('main_event_assignments')
-      .insert(assignmentRows);
+      .insert(assignmentRows)
+      .select();
 
     if (insertError) {
-      return res.status(500).json({ success: false, message: insertError.message });
+      console.error('[shuffle] Assignment Insert Error:', JSON.stringify(insertError, null, 2));
+      return res.status(500).json({
+        success:  false,
+        message:  'Assignment insert failed: ' + insertError.message,
+        hint:     insertError.hint || null,
+        details:  insertError.details || null,
+        code:     insertError.code || null
+      });
     }
+
+    const insertedCount = insertedData ? insertedData.length : assignmentRows.length;
+    console.log('[shuffle] inserted rows:', insertedCount);
 
     return res.status(200).json({
       success:             true,
       imposters_selected:  6,
       groups_created:      6,
-      assignments_written: true
+      assignments_written: true,
+      assignments_count:   insertedCount,
+      tasks_seeded:        (tasks || []).length > 0
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message || 'Shuffle could not be started.' });
   }
 });
+
+// ── POST /api/debug-assign ────────────────────────────────────────────────────
+// Emergency endpoint: reads already-shuffled participants and force-writes
+// main_event_assignments. Call this if the table is empty after a shuffle.
+// GET /api/debug-assign also works for easy browser testing.
+app.get('/api/debug-assign', handleDebugAssign);
+app.post('/api/debug-assign', handleDebugAssign);
+
+async function handleDebugAssign(req, res) {
+  try {
+    const { data: allTeams, error: teamsError } = await supabase
+      .from('teams').select('id, team_name');
+    if (teamsError) return res.status(500).json({ success: false, message: teamsError.message });
+
+    const { data: allParticipants, error: pErr } = await supabase
+      .from('participants').select('*');
+    if (pErr) return res.status(500).json({ success: false, message: pErr.message });
+
+    const teamMap = {};
+    allTeams.forEach((t) => { teamMap[t.id] = t; });
+
+    // Only use participants that have been shuffled
+    const shuffled = (allParticipants || []).filter((p) => p.shuffle_group);
+    if (shuffled.length === 0) {
+      return res.status(400).json({ success: false, message: 'No shuffled participants found. Run Shuffle All Teams first.' });
+    }
+
+    const { data: tasks } = await supabase
+      .from('main_event_tasks').select('*').order('task_number', { ascending: true });
+
+    const taskByNumber = {};
+    (tasks || []).forEach((t) => { taskByNumber[t.task_number] = t; });
+
+    const fallback = (num) => ({
+      task_number: num, task_title: `Task ${num}`,
+      task_description: `Main event task ${num}.`,
+      person1_title: 'Role 1', person1_work: 'To be announced.',
+      person2_title: 'Role 2', person2_work: 'To be announced.',
+      person3_title: 'Role 3', person3_work: 'To be announced.',
+      person4_title: 'The Imposter', person4_secret: 'Secret objective — see coordinator.'
+    });
+
+    const getTask = (num) => taskByNumber[num] || fallback(num);
+
+    const taskForGroup = (groupName) => {
+      const m = groupName.match(/\d+/);
+      const n = m ? parseInt(m[0], 10) : 1;
+      return getTask(((n - 1) % 3) + 1);
+    };
+
+    const slotData = (task, slot) => ({
+      1: { role_name: task.person1_title, work_description: task.person1_work },
+      2: { role_name: task.person2_title, work_description: task.person2_work },
+      3: { role_name: task.person3_title, work_description: task.person3_work },
+      4: { role_name: task.person4_title, work_description: task.person4_secret }
+    }[slot] || { role_name: 'Role 1', work_description: 'To be announced.' });
+
+    // Group participants by shuffle_group, imposters last
+    const byGroup = {};
+    shuffled.forEach((p) => {
+      if (!byGroup[p.shuffle_group]) byGroup[p.shuffle_group] = { specialists: [], imposter: null };
+      if (p.is_imposter || p.player_role === 'Imposter') {
+        byGroup[p.shuffle_group].imposter = p;
+      } else {
+        byGroup[p.shuffle_group].specialists.push(p);
+      }
+    });
+
+    // Delete old rows
+    await supabase.from('main_event_assignments').delete()
+      .gte('created_at', '1970-01-01T00:00:00.000Z');
+
+    const rows = [];
+    for (const [groupName, groupData] of Object.entries(byGroup)) {
+      const task = taskForGroup(groupName);
+      groupData.specialists.forEach((m, idx) => {
+        const slot = idx + 1;
+        const sd = slotData(task, slot);
+        rows.push({
+          participant_id: m.id, participant_name: m.participant_name,
+          original_team: (teamMap[m.team_id] || {}).team_name || 'Unknown',
+          shuffled_group: groupName, task_number: task.task_number,
+          task_title: task.task_title, task_description: task.task_description,
+          person_slot: slot, role_name: sd.role_name, work_description: sd.work_description,
+          is_imposter: false, github_repo: null, submission_status: 'Pending',
+          submitted_at: null, ai_score: null
+        });
+      });
+      if (groupData.imposter) {
+        const imp = groupData.imposter;
+        const sd = slotData(task, 4);
+        rows.push({
+          participant_id: imp.id, participant_name: imp.participant_name,
+          original_team: (teamMap[imp.team_id] || {}).team_name || 'Unknown',
+          shuffled_group: groupName, task_number: task.task_number,
+          task_title: task.task_title, task_description: task.task_description,
+          person_slot: 4, role_name: sd.role_name, work_description: sd.work_description,
+          is_imposter: true, github_repo: null, submission_status: 'Pending',
+          submitted_at: null, ai_score: null
+        });
+      }
+    }
+
+    console.log('[debug-assign] inserting', rows.length, 'rows');
+    console.log('[debug-assign] sample row:', JSON.stringify(rows[0], null, 2));
+
+    const { data: inserted, error: insertError } = await supabase
+      .from('main_event_assignments').insert(rows).select();
+
+    if (insertError) {
+      console.error('[debug-assign] insert error:', JSON.stringify(insertError, null, 2));
+      return res.status(500).json({
+        success: false, message: insertError.message,
+        hint: insertError.hint, code: insertError.code, details: insertError.details
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      inserted: inserted ? inserted.length : rows.length,
+      message: `Inserted ${inserted ? inserted.length : rows.length} assignment rows.`
+    });
+  } catch (err) {
+    console.error('[debug-assign] error:', err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+}
 
 // ── GET /api/my-assignment/:participantId ────────────────────────────────────
 // Returns the logged-in participant's task assignment.
