@@ -26,14 +26,27 @@
         .info-item { display:flex; flex-direction:column; gap:3px; }
         .info-label { font-size:0.65rem; letter-spacing:2px; text-transform:uppercase; color:#9db5d3; }
         .info-value { font-size:1rem; font-weight:bold; color:var(--cyan-accent); letter-spacing:1px; }
-        /* Classified mission */
-        .classified-toggle { display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none; padding:12px 16px; background:rgba(255,30,67,0.08); border:1px solid rgba(255,30,67,0.4); border-radius:8px; font-family:'Orbitron',sans-serif; font-size:0.78rem; color:var(--crimson-red); letter-spacing:2px; text-transform:uppercase; }
-        .classified-toggle:hover { background:rgba(255,30,67,0.14); }
-        .classified-body { display:none; margin-top:12px; padding:16px 18px; background:rgba(255,30,67,0.06); border:1px solid rgba(255,30,67,0.5); border-radius:8px; }
-        .classified-body.open { display:block; animation:fadeSlide 0.25s ease; }
-        @keyframes fadeSlide { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
-        .classified-label { font-family:'Orbitron',sans-serif; font-size:0.68rem; letter-spacing:2px; text-transform:uppercase; color:var(--crimson-red); margin-bottom:8px; }
-        .classified-text { font-size:0.9rem; color:#ffbfd0; line-height:1.7; }
+        /* Classified mission — matches screenshot */
+        .secret-panel { background:rgba(22,8,8,0.92); border:2px solid rgba(255,30,67,0.7); border-radius:12px; overflow:hidden; position:relative; }
+        .secret-panel::before { content:''; position:absolute; top:0; left:0; width:100%; height:3px; background:linear-gradient(90deg,var(--crimson-red),#7b0015,var(--crimson-red)); }
+        .secret-header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; cursor:pointer; user-select:none; gap:12px; }
+        .secret-header:hover { background:rgba(255,30,67,0.06); }
+        .secret-header-left { display:flex; align-items:center; gap:14px; }
+        .secret-icon { font-size:1.5rem; flex-shrink:0; }
+        .secret-title { font-family:'Orbitron',sans-serif; font-size:0.88rem; color:var(--crimson-red); letter-spacing:2px; text-transform:uppercase; font-weight:900; }
+        .secret-subtitle { font-size:0.78rem; color:rgba(255,180,180,0.7); margin-top:3px; letter-spacing:0.5px; }
+        .secret-chevron { font-family:'Orbitron',sans-serif; color:var(--crimson-red); font-size:1rem; flex-shrink:0; transition:transform 0.25s; }
+        .secret-chevron.open { transform:rotate(180deg); }
+        .secret-body { display:none; padding:0 20px 20px; }
+        .secret-body.open { display:block; animation:fadeSlide 0.25s ease; }
+        .secret-warning { display:flex; align-items:center; gap:12px; background:rgba(255,30,67,0.1); border:1px solid rgba(255,30,67,0.45); border-radius:8px; padding:12px 16px; margin-bottom:18px; }
+        .secret-warning-icon { font-size:1.2rem; flex-shrink:0; }
+        .secret-warning-text { font-family:'Fira Code',monospace; font-size:0.8rem; color:var(--crimson-red); letter-spacing:0.5px; line-height:1.5; }
+        .secret-steps { display:flex; flex-direction:column; gap:12px; }
+        .secret-step { display:flex; align-items:flex-start; gap:14px; }
+        .step-num { width:24px; height:24px; border-radius:50%; border:2px solid rgba(255,30,67,0.7); display:flex; align-items:center; justify-content:center; font-family:'Orbitron',sans-serif; font-size:0.68rem; color:var(--crimson-red); font-weight:900; flex-shrink:0; margin-top:2px; }
+        .step-text { font-family:'Fira Code',monospace; font-size:0.85rem; color:rgba(255,200,200,0.9); line-height:1.6; }
+        .step-text .step-note { display:block; font-size:0.72rem; color:rgba(255,150,150,0.65); margin-top:3px; }
         /* Start button */
         .start-btn { width:100%; padding:18px; background:linear-gradient(135deg,#c00d2e,var(--crimson-red)); color:#fff; font-family:'Orbitron',sans-serif; font-size:1.1rem; font-weight:900; letter-spacing:3px; text-transform:uppercase; border:2px solid #000; border-radius:50px; cursor:pointer; box-shadow:0 0 20px rgba(255,30,67,0.5); transition:all 0.2s; }
         .start-btn:hover:not(:disabled) { transform:scale(1.02); box-shadow:0 0 30px rgba(255,30,67,0.8); }
@@ -95,29 +108,63 @@ Write a program that prints numbers from <strong>1 to N</strong>.<br>
                 </div>
             </div>
 
-            <!-- Specialist rules (ALL participants see this) -->
+            <!-- Rules (ALL participants see this) -->
             <div class="panel">
-                <div class="panel-title">&#128218; Specialist Rules</div>
-                <div class="problem-text">
-• Print each number on a new line.<br>
-• Your coordinator will give you the exact conditions during the round.<br>
-• One code submission per shuffled group.<br>
-• Any group member may submit on behalf of the group.<br>
-• Use any programming language.
+                <div class="panel-title" style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:1.1rem;">&#128203;</span>
+                    RULES
+                </div>
+                <p style="font-size:0.7rem;letter-spacing:1.5px;text-transform:uppercase;color:#9db5d3;margin-bottom:16px;">PLEASE READ THE FOLLOWING INSTRUCTIONS CAREFULLY.</p>
+                <div class="problem-text" style="background:transparent;border:none;padding:0;">
+                    <ul style="list-style:none;display:flex;flex-direction:column;gap:10px;">
+                        <li style="display:flex;align-items:flex-start;gap:10px;"><span style="color:var(--cyan-accent);font-size:0.55rem;margin-top:6px;">&#11044;</span><span>Print each number on a new line.</span></li>
+                        <li style="display:flex;align-items:flex-start;gap:10px;"><span style="color:var(--cyan-accent);font-size:0.55rem;margin-top:6px;">&#11044;</span><span>Your coordinator will give you the exact conditions during the round.</span></li>
+                        <li style="display:flex;align-items:flex-start;gap:10px;"><span style="color:var(--cyan-accent);font-size:0.55rem;margin-top:6px;">&#11044;</span><span>One code submission per shuffled group.</span></li>
+                        <li style="display:flex;align-items:flex-start;gap:10px;"><span style="color:var(--cyan-accent);font-size:0.55rem;margin-top:6px;">&#11044;</span><span>Any group member may submit on behalf of the group.</span></li>
+                        <li style="display:flex;align-items:flex-start;gap:10px;"><span style="color:var(--cyan-accent);font-size:0.55rem;margin-top:6px;">&#11044;</span><span>Use any programming language.</span></li>
+                    </ul>
                 </div>
             </div>
 
-            <!-- Classified Mission (Imposter ONLY — injected by JS) -->
+            <!-- Secret Mission (Imposter ONLY — injected by JS) -->
             <div id="classified-section" style="display:none;">
-                <div class="panel">
-                    <div class="classified-toggle" onclick="toggleClassified()" id="classified-toggle">
-                        <span>&#9888;</span>
-                        <span>CLASSIFIED MISSION — TAP TO REVEAL</span>
-                        <span id="classified-arrow">&#9660;</span>
+                <div class="secret-panel">
+                    <div class="secret-header" onclick="toggleClassified()">
+                        <div class="secret-header-left">
+                            <span class="secret-icon">&#128561;</span>
+                            <div>
+                                <div class="secret-title">SECRET MISSION &mdash; IMPOSTER ONLY</div>
+                                <div class="secret-subtitle" id="secret-subtitle">Tap to reveal your secret mission.</div>
+                            </div>
+                        </div>
+                        <span class="secret-chevron" id="classified-arrow">&#8963;</span>
                     </div>
-                    <div class="classified-body" id="classified-body">
-                        <div class="classified-label">&#128274; For Your Eyes Only — Do Not Share</div>
-                        <div class="classified-text" id="classified-text"></div>
+                    <div class="secret-body" id="classified-body">
+                        <div class="secret-warning">
+                            <span class="secret-warning-icon">&#9888;</span>
+                            <span class="secret-warning-text">IMPORTANT: Keep this mission secret. Do not tell your teammates.</span>
+                        </div>
+                        <div class="secret-steps">
+                            <div class="secret-step">
+                                <span class="step-num">1</span>
+                                <span class="step-text">Print numbers from 1 to N.</span>
+                            </div>
+                            <div class="secret-step">
+                                <span class="step-num">2</span>
+                                <span class="step-text">Fizz &rarr; for numbers divisible by 3.</span>
+                            </div>
+                            <div class="secret-step">
+                                <span class="step-num">3</span>
+                                <span class="step-text">Buzz &rarr; for numbers divisible by 5.</span>
+                            </div>
+                            <div class="secret-step">
+                                <span class="step-num">4</span>
+                                <span class="step-text">
+                                    FizzBuzz &rarr; for numbers divisible by both 3 and 5.
+                                    <span class="step-note">(Do not reveal this condition to your group members.)<br>Your fellow specialists should not make the code output &ldquo;FizzBuzz&rdquo;.</span>
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -160,10 +207,13 @@ Write a program that prints numbers from <strong>1 to N</strong>.<br>
         }
 
         function toggleClassified(){
-            var body=document.getElementById('classified-body');
-            var arrow=document.getElementById('classified-arrow');
+            var body  = document.getElementById('classified-body');
+            var arrow = document.getElementById('classified-arrow');
+            var sub   = document.getElementById('secret-subtitle');
             body.classList.toggle('open');
-            arrow.textContent=body.classList.contains('open')?'&#9650;':'&#9660;';
+            var isOpen = body.classList.contains('open');
+            arrow.className = isOpen ? 'secret-chevron open' : 'secret-chevron';
+            if (sub) sub.innerText = isOpen ? 'This section is only for the imposter. Do not reveal this to your teammates.' : 'Tap to reveal your secret mission.';
         }
 
         function enterCoding(){
@@ -223,10 +273,19 @@ Write a program that prints numbers from <strong>1 to N</strong>.<br>
                     document.getElementById('info-group-select').style.display = 'inline-block';
                 }
 
-                // Classified mission for Imposter only — text must not reveal the FizzBuzz secret directly
-                if (ad.success && ad.is_imposter) {
-                    var secretText = 'CLASSIFIED MISSION: You are the Imposter. Your hidden objective is to subtly influence your team\'s output for specific numbers. Do not reveal this to your teammates. Follow the coordinator\'s verbal briefing.';
-                    document.getElementById('classified-text').innerText = secretText;
+                // Classified mission for Imposter only
+                // Use my-assignment as authoritative source for is_imposter
+                var isImposter = (ad.success && ad.is_imposter) ? true : false;
+                if (!isImposter) {
+                    try {
+                        var mr2 = await fetch('http://localhost:3000/api/my-assignment/'+PARTICIPANT_ID);
+                        var md2 = await mr2.json();
+                        if (md2.success && md2.assignment && md2.assignment.is_imposter === true) {
+                            isImposter = true;
+                        }
+                    } catch(e3){}
+                }
+                if (isImposter) {
                     document.getElementById('classified-section').style.display = 'block';
                 }
             } catch(e) {
