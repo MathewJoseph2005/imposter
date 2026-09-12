@@ -554,9 +554,19 @@ async function saveManualScore(event_name, original_team, btn){
     try{
         const r=await fetch(API+'/api/admin/manual-score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event_name,original_team,marks:val})});
         const d=await r.json();
-        if(r.ok&&d.success){ await fetchAll(); renderManual(); renderPodium(); renderOverview(); }
-        else { btn.innerText='❌ Failed'; btn.disabled=false; }
-    }catch(ex){ btn.innerText='❌ Error'; btn.disabled=false; }
+        if(r.ok&&d.success){
+            await fetchAll(); renderManual(); renderPodium(); renderOverview();
+        } else {
+            btn.innerText='❌ Failed';
+            btn.disabled=false;
+            // Show the actual error so we can diagnose
+            alert('Save failed: '+(d.message||JSON.stringify(d)));
+        }
+    }catch(ex){
+        btn.innerText='❌ Error';
+        btn.disabled=false;
+        alert('Network error: '+ex.message);
+    }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -671,23 +681,7 @@ function renderTimers(){
         </div>`;
     }).join('');
 
-    // Start local countdowns for running timers
-    allTimers.forEach(t => {
-        if(t.status !== 'running') return;
-        const key = t.event_key || t.event_name;
-        const enc = key.replace(/[^a-zA-Z0-9]/g,'_');
-        let rem = t.remaining_seconds != null ? t.remaining_seconds : (t.remaining_secs||0);
-        timerCountdowns[key] = setInterval(() => {
-            rem = Math.max(0, rem - 1);
-            const disp = document.getElementById('ts-display-'+enc);
-            const lbl  = document.getElementById('ts-label-'+enc);
-            if(disp) disp.innerText = fmtSecs(rem);
-            if(rem <= 0){
-                clearInterval(timerCountdowns[key]);
-                if(lbl) { lbl.innerText = 'Finished'; lbl.className = lbl.className.replace('text-emerald-400','text-rose-400'); }
-            }
-        }, 1000);
-    });
+    // tickTimerDisplays() handles per-second countdown globally
 }
 
 async function timerAction(eventKey, action, btn){
@@ -879,12 +873,15 @@ function closeFB(){ document.getElementById('fb-modal').classList.add('hidden');
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 // Tick running timer displays every second without rebuilding cards
+var _timerTick = 0;
 function tickTimerDisplays(){
+    _timerTick++;
     allTimers.forEach(function(t){
         if(t.status !== 'running') return;
-        var key = (t.event_key||t.event_name||'').replace(/[^a-zA-Z0-9]/g,'_');
-        var disp = document.getElementById('ts-display-'+key);
-        var lbl  = document.getElementById('ts-label-'+key);
+        var rawKey = t.event_key || t.event_name || '';
+        var key    = rawKey.replace(/[^a-zA-Z0-9]/g,'_');
+        var disp   = document.getElementById('ts-display-'+key);
+        var lbl    = document.getElementById('ts-label-'+key);
         if(!disp) return;
         t.remaining_seconds = Math.max(0,(t.remaining_seconds||0)-1);
         t.remaining_secs    = t.remaining_seconds;
@@ -893,6 +890,11 @@ function tickTimerDisplays(){
             t.status = 'finished';
             disp.className = 'text-4xl font-orbitron font-bold text-rose-400 tracking-widest';
             if(lbl){ lbl.innerText='Finished'; lbl.className='text-xs font-orbitron text-rose-400'; }
+            // Persist finished state to DB
+            fetch(API+'/api/event/finish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventKey:rawKey})}).catch(function(){});
+        } else if(_timerTick % 10 === 0){
+            // Persist remaining_seconds directly — avoids pause/resume race conditions
+            fetch(API+'/api/event/tick',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventKey:rawKey, remaining_seconds:t.remaining_seconds})}).catch(function(){});
         }
     });
 }

@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
@@ -1264,16 +1264,38 @@ app.post('/api/admin/manual-score', async (req, res) => {
       return res.status(400).json({ success: false, message: 'event_name, original_team, and marks are required.' });
     }
 
-    const { error } = await supabase
-      .from('manual_event_scores')
-      .upsert({
-        event_name,
-        original_team,
-        marks: Math.min(100, Math.max(0, marks)),
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'event_name,original_team' });
+    const safeMarks = Math.min(100, Math.max(0, marks));
+    const now       = new Date().toISOString();
 
-    if (error) return res.status(500).json({ success: false, message: error.message });
+    // Try update first (row may already exist)
+    const { data: existing } = await supabase
+      .from('manual_event_scores')
+      .select('id')
+      .eq('event_name', event_name)
+      .eq('original_team', original_team)
+      .maybeSingle();
+
+    let error;
+    if (existing) {
+      // Row exists — update it
+      const result = await supabase
+        .from('manual_event_scores')
+        .update({ marks: safeMarks, updated_at: now })
+        .eq('event_name', event_name)
+        .eq('original_team', original_team);
+      error = result.error;
+    } else {
+      // Row doesn't exist — insert it
+      const result = await supabase
+        .from('manual_event_scores')
+        .insert({ event_name, original_team, marks: safeMarks, updated_at: now });
+      error = result.error;
+    }
+
+    if (error) {
+      console.error('[manual-score] Supabase error:', error);
+      return res.status(500).json({ success: false, message: error.message, hint: error.hint, code: error.code });
+    }
     return res.status(200).json({ success: true, message: 'Marks saved.' });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
@@ -1684,18 +1706,19 @@ app.post('/api/admin/timer/:eventName/start', async (req, res) => {
       let updatePayload = {};
       if (action === 'start') {
         if (t.status === 'running') return res.status(400).json({ success: false, message: 'Already running.' });
-        const fullSecs = (t.duration_minutes || 15) * 60;
+        const fullSecs = getFullSecs(t, 15);
         updatePayload = { status: 'running', started_at: new Date().toISOString(), paused_at: null, remaining_seconds: fullSecs };
       } else if (action === 'pause') {
         if (t.status !== 'running') return res.status(400).json({ success: false, message: 'Not running.' });
         const runningFor = Math.floor((Date.now() - new Date(t.started_at).getTime()) / 1000);
-        const remaining  = Math.max(0, (t.remaining_seconds || 0) - runningFor);
+        const base       = (t.remaining_seconds != null && t.remaining_seconds > 0) ? t.remaining_seconds : getFullSecs(t, 15);
+        const remaining  = Math.max(0, base - runningFor);
         updatePayload = { status: 'paused', paused_at: new Date().toISOString(), started_at: null, remaining_seconds: remaining };
       } else if (action === 'resume') {
         if (t.status !== 'paused') return res.status(400).json({ success: false, message: 'Not paused.' });
         updatePayload = { status: 'running', started_at: new Date().toISOString(), paused_at: null };
       } else if (action === 'reset') {
-        const fullSecs = (t.duration_minutes || 15) * 60;
+        const fullSecs = getFullSecs(t, 15);
         updatePayload = { status: 'idle', started_at: null, paused_at: null, remaining_seconds: fullSecs };
       }
 
@@ -1985,6 +2008,12 @@ app.get('/api/my-scores/:participantId', async (req, res) => {
 //              remaining_seconds INTEGER, status TEXT
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// Helper: get full duration in seconds from a timer row (supports both column schemas)
+function getFullSecs(t, defaultMins) {
+  if (t.duration_minutes != null && t.duration_minutes > 0) return t.duration_minutes * 60;
+  if (t.duration_secs    != null && t.duration_secs    > 0) return t.duration_secs;
+  return (defaultMins || 15) * 60;
+}
 // Map event_key aliases → event_key values in the real table
 const EVENT_KEY_MAP = {
   'main_event':    'main_event',
@@ -2004,16 +2033,30 @@ function resolveEventKey(input) {
 }
 
 // Compute remaining_seconds from DB row (handles running timers live)
+// Supports both schema variants:
+//   - event_key table: duration_minutes, remaining_seconds
+//   - legacy table: duration_secs, elapsed_secs
 function computeRemainingV2(t) {
   if (!t) return 0;
-  const fullSecs = (t.duration_minutes || 0) * 60;
+  // Support both duration_minutes and duration_secs column names
+  const fullSecs = t.duration_minutes != null
+    ? (t.duration_minutes * 60)
+    : (t.duration_secs != null ? t.duration_secs : 900);  // fallback 15 min
+
   if (t.status === 'finished') return 0;
+
   if (t.status === 'running' && t.started_at) {
     const runningFor = Math.floor((Date.now() - new Date(t.started_at).getTime()) / 1000);
-    const stored     = t.remaining_seconds != null ? t.remaining_seconds : fullSecs;
-    return Math.max(0, stored - runningFor);
+    // remaining_seconds in DB = value at last start/resume point
+    const stored = t.remaining_seconds != null ? t.remaining_seconds : fullSecs;
+    // Guard: if stored is 0 or negative, return full duration (prevents instant-finish on first start)
+    const base = stored > 0 ? stored : fullSecs;
+    return Math.max(0, base - runningFor);
   }
-  return t.remaining_seconds != null ? t.remaining_seconds : fullSecs;
+
+  // paused / idle: return stored remaining (or full if never set)
+  if (t.remaining_seconds != null && t.remaining_seconds > 0) return t.remaining_seconds;
+  return fullSecs;
 }
 
 // Normalise a DB row to a consistent shape for the frontend
@@ -2023,7 +2066,7 @@ function normaliseTimer(t) {
     event_key:         t.event_key,
     event_name:        t.event_name || t.event_key,
     duration_minutes:  t.duration_minutes,
-    duration_secs:     (t.duration_minutes || 0) * 60,  // compat alias
+    duration_secs:     getFullSecs(t, 15),  // compat alias
     started_at:        t.started_at,
     paused_at:         t.paused_at,
     remaining_seconds: remaining,
@@ -2067,7 +2110,7 @@ app.post('/api/admin/fizzbuzz/toggle', async (req, res) => {
       .eq('event_key', 'fizzbuzz').maybeSingle();
     if (!t) return res.status(404).json({ success: false, message: 'FizzBuzz timer not found.' });
 
-    const fullSecs = (t.duration_minutes || 20) * 60;
+    const fullSecs = getFullSecs(t, 15);
     if (action === 'on') {
       const { error } = await supabase.from('event_timers').update({
         status: 'running', started_at: new Date().toISOString(),
@@ -2095,10 +2138,13 @@ app.post('/api/event/start', async (req, res) => {
     if (!t) return res.status(404).json({ success: false, message: 'Timer not found: ' + eventKey });
     if (t.status === 'running') return res.status(400).json({ success: false, message: 'Already running.' });
 
-    const fullSecs = (t.duration_minutes || 15) * 60;
+    const fullSecs = getFullSecs(t, 15);
+    // Always write full duration on Start — prevents leftover 0 from a previous finished run
     const { error } = await supabase.from('event_timers').update({
-      status: 'running', started_at: new Date().toISOString(),
-      paused_at: null, remaining_seconds: fullSecs
+      status: 'running',
+      started_at: new Date().toISOString(),
+      paused_at: null,
+      remaining_seconds: fullSecs   // always reset to full, regardless of previous state
     }).eq('event_key', eventKey);
     if (error) return res.status(500).json({ success: false, message: error.message });
     return res.status(200).json({ success: true, status: 'running', remaining_seconds: fullSecs });
@@ -2146,12 +2192,46 @@ app.post('/api/event/reset', async (req, res) => {
     const { data: t } = await supabase.from('event_timers').select('duration_minutes').eq('event_key', eventKey).maybeSingle();
     if (!t) return res.status(404).json({ success: false, message: 'Timer not found.' });
 
-    const fullSecs = (t.duration_minutes || 15) * 60;
+    const fullSecs = getFullSecs(t, 15);
     const { error } = await supabase.from('event_timers').update({
       status: 'idle', started_at: null, paused_at: null, remaining_seconds: fullSecs
     }).eq('event_key', eventKey);
     if (error) return res.status(500).json({ success: false, message: error.message });
     return res.status(200).json({ success: true, status: 'idle', remaining_seconds: fullSecs });
+  } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
+});
+
+// ── POST /api/event/finish ────────────────────────────────────────────────────
+// Called when countdown reaches 0 (from client tick)
+app.post('/api/event/finish', async (req, res) => {
+  try {
+    const eventKey = resolveEventKey(String(req.body?.eventKey || '').trim());
+    const { error } = await supabase.from('event_timers').update({
+      status: 'finished', remaining_seconds: 0, started_at: null
+    }).eq('event_key', eventKey);
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    return res.status(200).json({ success: true, status: 'finished', remaining_seconds: 0 });
+  } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
+});
+
+// ── POST /api/event/tick ──────────────────────────────────────────────────────
+// Persist current remaining_seconds without changing status or started_at.
+// Called every 10s by the client countdown to keep DB in sync for page refreshes.
+app.post('/api/event/tick', async (req, res) => {
+  try {
+    const eventKey         = resolveEventKey(String(req.body?.eventKey || '').trim());
+    const remaining_seconds = Number(req.body?.remaining_seconds);
+    if (!eventKey) return res.status(400).json({ success: false, message: 'eventKey required.' });
+    if (isNaN(remaining_seconds)) return res.status(400).json({ success: false, message: 'remaining_seconds required.' });
+
+    // Only update if timer is still running (don't overwrite a paused/finished state)
+    const { error } = await supabase.from('event_timers')
+      .update({ remaining_seconds: Math.max(0, remaining_seconds) })
+      .eq('event_key', eventKey)
+      .eq('status', 'running');   // guard: only update running timers
+
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    return res.status(200).json({ success: true });
   } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
 });
 

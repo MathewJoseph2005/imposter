@@ -183,3 +183,18 @@ CREATE TABLE IF NOT EXISTS manual_event_scores_v2 (
 -- ── Phase 6: add language column to fizzbuzz_submissions_v2 ─────────────────
 ALTER TABLE fizzbuzz_submissions_v2
   ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'Unknown';
+
+-- ── Ensure manual_event_scores table exists with correct schema ───────────────
+-- Run this if the table is missing or upsert fails
+CREATE TABLE IF NOT EXISTS manual_event_scores (
+    id             SERIAL PRIMARY KEY,
+    event_name     TEXT         NOT NULL,
+    original_team  TEXT         NOT NULL,
+    marks          INTEGER      NOT NULL DEFAULT 0,
+    updated_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    UNIQUE(event_name, original_team)
+);
+
+-- If the table exists but upsert fails due to constraint name mismatch, run:
+-- ALTER TABLE manual_event_scores DROP CONSTRAINT IF EXISTS manual_event_scores_event_name_original_team_key;
+-- ALTER TABLE manual_event_scores ADD CONSTRAINT manual_event_scores_event_name_original_team_key UNIQUE (event_name, original_team);

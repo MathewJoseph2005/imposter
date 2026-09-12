@@ -129,9 +129,12 @@
 
         function fmtTime(s){ s=Math.max(0,s); var m=Math.floor(s/60),sec=s%60; return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'); }
 
+        var _tickCount = 0;
         function startCountdown(){
             clearInterval(timerInterval);
+            _tickCount = 0;
             timerInterval = setInterval(function(){
+                _tickCount++;
                 remainingSecs = Math.max(0, remainingSecs-1);
                 document.getElementById('timer-display').innerText = fmtTime(remainingSecs);
                 if (remainingSecs <= 0){
@@ -142,6 +145,15 @@
                     document.getElementById('code-area').disabled = true;
                     var dot = document.getElementById('live-dot');
                     dot.style.animation='none'; dot.style.backgroundColor='#c00d2e'; dot.style.boxShadow='none';
+                    // Persist finished to DB
+                    fetch('http://localhost:3000/api/event/finish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventKey:'fizzbuzz'})}).catch(function(){});
+        } else if (_tickCount % 10 === 0) {
+                    // Persist remaining_seconds directly — no pause/resume (avoids race conditions)
+                    fetch('http://localhost:3000/api/event/tick',{
+                        method:'POST',
+                        headers:{'Content-Type':'application/json'},
+                        body:JSON.stringify({eventKey:'fizzbuzz', remaining_seconds: remainingSecs})
+                    }).catch(function(){});
                 }
             }, 1000);
         }
