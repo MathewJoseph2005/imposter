@@ -39,3 +39,41 @@ CREATE TABLE main_event_assignments (
 -- Fast lookup by participant_id (used by GET /api/my-assignment/:id)
 CREATE INDEX IF NOT EXISTS idx_mea_participant_id
     ON main_event_assignments (participant_id);
+
+-- ── Phase 1 migration: add ai_feedback column ──────────────────────────────
+-- Safe to run multiple times (IF NOT EXISTS)
+ALTER TABLE main_event_assignments
+  ADD COLUMN IF NOT EXISTS ai_feedback TEXT;
+
+-- ── Phase 2 migration: add individual score breakdown columns ─────────────
+ALTER TABLE main_event_assignments
+  ADD COLUMN IF NOT EXISTS ui_score           INTEGER,
+  ADD COLUMN IF NOT EXISTS task_match_score   INTEGER,
+  ADD COLUMN IF NOT EXISTS logic_score        INTEGER,
+  ADD COLUMN IF NOT EXISTS creativity_score   INTEGER,
+  ADD COLUMN IF NOT EXISTS code_quality_score INTEGER,
+  ADD COLUMN IF NOT EXISTS evaluation_status  TEXT DEFAULT 'Pending';
+
+-- Run this in Supabase SQL Editor before using Phase 2 evaluation.
+
+-- ── Phase 2 migration: GitHub metadata columns ─────────────────────────────
+ALTER TABLE main_event_assignments
+  ADD COLUMN IF NOT EXISTS github_owner     TEXT,
+  ADD COLUMN IF NOT EXISTS github_repo_name TEXT,
+  ADD COLUMN IF NOT EXISTS github_branch    TEXT;
+
+-- ── Phase 3 migration: individual scores + submission lock ─────────────────
+ALTER TABLE main_event_assignments
+  ADD COLUMN IF NOT EXISTS main_event_score  INTEGER  DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS fizzbuzz_score    INTEGER  DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS submission_locked BOOLEAN  DEFAULT FALSE;
+
+-- ── manual_event_scores table ──────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS manual_event_scores (
+    id             SERIAL PRIMARY KEY,
+    event_name     TEXT         NOT NULL,
+    original_team  TEXT         NOT NULL,
+    marks          INTEGER      NOT NULL DEFAULT 0,
+    updated_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    UNIQUE(event_name, original_team)
+);

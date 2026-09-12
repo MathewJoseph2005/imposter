@@ -2,7 +2,8 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
-const { scoreRepository } = require('./aiScorer');
+const { scoreRepository, evaluateSubmission, checkRepoExists } = require('./aiScorer');
+const { validateRepository } = require('./githubValidator');
 
 console.log('SUPABASE_URL loaded:', !!process.env.SUPABASE_URL);
 console.log('SUPABASE_KEY loaded:', !!process.env.SUPABASE_KEY);
@@ -762,7 +763,8 @@ app.get('/api/my-assignment/:participantId', async (req, res) => {
         'participant_id, participant_name, original_team, shuffled_group, ' +
         'task_number, task_title, task_description, ' +
         'person_slot, role_name, work_description, is_imposter, ' +
-        'github_repo, submission_status, submitted_at, ai_score'
+        'github_repo, submission_status, evaluation_status, submitted_at, ' +
+        'ai_score, ui_score, task_match_score, logic_score, creativity_score, code_quality_score, ai_feedback'
       )
       .eq('participant_id', participantId)
       .maybeSingle();
@@ -785,9 +787,8 @@ app.get('/api/my-assignment/:participantId', async (req, res) => {
 });
 
 // ── POST /api/submit-github ──────────────────────────────────────────────────
-// Saves a participant's GitHub repository link into their assignment record.
-// Prevents duplicate submissions.
-// participant_id is a UUID string — never parse as integer.
+// Validates URL via githubValidator, checks for duplicates, saves to Supabase,
+// then triggers background AI evaluation.
 app.post('/api/submit-github', async (req, res) => {
   try {
     const participant_id = String(req.body?.participant_id || '').trim();
@@ -797,45 +798,545 @@ app.post('/api/submit-github', async (req, res) => {
       return res.status(400).json({ success: false, message: 'participant_id is required.' });
     }
 
+    // ── Step 1: URL format check ─────────────────────────────────────────────
     if (!github_repo || !validGitHubUrl(github_repo)) {
-      return res.status(400).json({ success: false, message: 'Valid GitHub repository URL is required.' });
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter a valid GitHub repository URL.'
+      });
     }
 
-    // Check assignment exists and has not already been submitted
+    // ── Step 2: Check assignment + duplicate guard ────────────────────────────
     const { data: existing, error: fetchError } = await supabase
       .from('main_event_assignments')
-      .select('participant_id, submission_status')
+      .select('participant_id, submission_status, github_repo')
       .eq('participant_id', participant_id)
       .maybeSingle();
 
-    if (fetchError) {
-      return res.status(500).json({ success: false, message: fetchError.message });
+    if (fetchError) return res.status(500).json({ success: false, message: fetchError.message });
+    if (!existing)  return res.status(404).json({ success: false, message: 'Assignment not found for this participant.' });
+
+    if (existing.submission_status === 'Submitted' || existing.submission_status === 'Evaluated') {
+      return res.status(409).json({
+        success:     false,
+        message:     'You have already submitted. Only one submission is allowed.',
+        github_repo: existing.github_repo
+      });
     }
 
-    if (!existing) {
-      return res.status(404).json({ success: false, message: 'Assignment not found for this participant.' });
+    // ── Step 3: Full GitHub validation via githubValidator.js ────────────────
+    const validation = await validateRepository(github_repo);
+    console.log('[GitHub Validation]', validation);
+
+    if (!validation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: validation.message
+      });
     }
 
-    if (existing.submission_status === 'Submitted') {
-      return res.status(409).json({ success: false, message: 'You have already submitted. Only one submission is allowed.' });
-    }
+    // ── Step 4: Save to Supabase (repo + metadata) ────────────────────────────
+    console.log('[GitHub Submitted]', participant_id, github_repo);
 
     const { error: updateError } = await supabase
       .from('main_event_assignments')
       .update({
         github_repo,
+        github_owner:     validation.owner,
+        github_repo_name: validation.repo,
+        github_branch:    validation.defaultBranch,
         submission_status: 'Submitted',
         submitted_at:      new Date().toISOString()
       })
       .eq('participant_id', participant_id);
 
-    if (updateError) {
-      return res.status(500).json({ success: false, message: updateError.message });
-    }
+    if (updateError) return res.status(500).json({ success: false, message: updateError.message });
 
-    return res.status(200).json({ success: true, message: 'GitHub repository submitted successfully.' });
+    // ── Step 5: Background AI evaluation (fire-and-forget) ───────────────────
+    setImmediate(async () => {
+      try {
+        const { data: asgn } = await supabase
+          .from('main_event_assignments')
+          .select('participant_id, participant_name, github_repo, task_title, task_description, role_name, work_description, is_imposter')
+          .eq('participant_id', participant_id)
+          .maybeSingle();
+
+        if (!asgn || !asgn.github_repo) return;
+
+        const result = await evaluateSubmission({
+          github_repo:      asgn.github_repo,
+          task_title:       asgn.task_title,
+          task_description: asgn.task_description,
+          role_name:        asgn.role_name,
+          work_description: asgn.work_description,
+          is_imposter:      asgn.is_imposter
+        });
+
+        await supabase.from('main_event_assignments').update({
+          ai_score:           result.total_score,
+          ui_score:           result.ui_score,
+          task_match_score:   result.task_completion_score,
+          logic_score:        result.logic_score,
+          creativity_score:   result.creativity_score,
+          code_quality_score: result.responsiveness_score,
+          ai_feedback:        result.feedback,
+          evaluation_status:  'Evaluated',
+          submission_status:  'Evaluated'
+        }).eq('participant_id', participant_id);
+
+        console.log('[eval] Completed for', asgn.participant_name, '— score:', result.total_score);
+      } catch (evalErr) {
+        console.error('[eval] Background evaluation failed for', participant_id, ':', evalErr.message);
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'GitHub repository submitted successfully.',
+      repository: {
+        owner:  validation.owner,
+        name:   validation.repo,
+        branch: validation.defaultBranch
+      }
+    });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message || 'Submission failed.' });
+  }
+});
+
+// ── POST /api/evaluate-submission/:participantId ──────────────────────────────
+// Downloads repo, runs Groq AI, saves all score columns + feedback.
+// Can be called by admin to manually re-evaluate.
+app.post('/api/evaluate-submission/:participantId', async (req, res) => {
+  try {
+    const participantId = String(req.params.participantId || '').trim();
+    if (!participantId) return res.status(400).json({ success: false, message: 'participantId is required.' });
+
+    const { data: assignment, error: fetchError } = await supabase
+      .from('main_event_assignments')
+      .select('participant_id, participant_name, github_repo, submission_status, task_title, task_description, role_name, work_description, is_imposter')
+      .eq('participant_id', participantId)
+      .maybeSingle();
+
+    if (fetchError) return res.status(500).json({ success: false, message: fetchError.message });
+    if (!assignment) return res.status(404).json({ success: false, message: 'Assignment not found.' });
+    if (!assignment.github_repo) return res.status(400).json({ success: false, message: 'No GitHub repository has been submitted yet.' });
+
+    const result = await evaluateSubmission({
+      github_repo:      assignment.github_repo,
+      task_title:       assignment.task_title,
+      task_description: assignment.task_description,
+      role_name:        assignment.role_name,
+      work_description: assignment.work_description,
+      is_imposter:      assignment.is_imposter
+    });
+
+    const { error: updateError } = await supabase
+      .from('main_event_assignments')
+      .update({
+        ai_score:           result.total_score,
+        ui_score:           result.ui_score,
+        task_match_score:   result.task_completion_score,
+        logic_score:        result.logic_score,
+        creativity_score:   result.creativity_score,
+        code_quality_score: result.responsiveness_score,
+        ai_feedback:        result.feedback,
+        evaluation_status:  'Evaluated',
+        submission_status:  'Evaluated'
+      })
+      .eq('participant_id', participantId);
+
+    if (updateError) return res.status(500).json({ success: false, message: updateError.message });
+
+    return res.status(200).json({
+      success:              true,
+      participant:          assignment.participant_name,
+      score:                result.total_score,
+      status:               'Evaluated',
+      ui_score:             result.ui_score,
+      task_completion_score: result.task_completion_score,
+      logic_score:          result.logic_score,
+      responsiveness_score: result.responsiveness_score,
+      creativity_score:     result.creativity_score,
+      feedback:             result.feedback
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message || 'Evaluation failed.' });
+  }
+});
+
+// ── GET /api/submitted-participants ──────────────────────────────────────────
+// Admin endpoint — all Submitted + Evaluated participants, newest first.
+app.get('/api/submitted-participants', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('main_event_assignments')
+      .select(
+        'participant_id, participant_name, original_team, shuffled_group, github_repo, ' +
+        'submission_status, evaluation_status, submitted_at, ' +
+        'ai_score, ui_score, task_match_score, logic_score, creativity_score, code_quality_score, ' +
+        'ai_feedback, task_title, task_number, role_name, person_slot'
+      )
+      .in('submission_status', ['Submitted', 'Evaluated'])
+      .order('submitted_at', { ascending: false });
+
+    if (error) return res.status(500).json({ success: false, message: error.message });
+
+    return res.status(200).json({ success: true, participants: data || [] });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message || 'Failed to fetch submissions.' });
+  }
+});
+
+// ── GET /api/all-assignments ──────────────────────────────────────────────────
+// Admin endpoint — all 24 assignments with current status (for overview counts).
+app.get('/api/all-assignments', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('main_event_assignments')
+      .select('participant_id, participant_name, original_team, submission_status, evaluation_status, ai_score, github_repo');
+
+    if (error) return res.status(500).json({ success: false, message: error.message });
+
+    return res.status(200).json({ success: true, assignments: data || [] });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message || 'Failed to fetch assignments.' });
+  }
+});
+
+// ── GET /api/team-scoreboard ──────────────────────────────────────────────────
+// Groups evaluated scores by original_team. Used for Team Podium.
+app.get('/api/team-scoreboard', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('main_event_assignments')
+      .select('original_team, ai_score, submission_status');
+
+    if (error) return res.status(500).json({ success: false, message: error.message });
+
+    // Aggregate by original_team
+    const teamMap = {};
+    (data || []).forEach((row) => {
+      const team = row.original_team || 'Unknown';
+      if (!teamMap[team]) teamMap[team] = { team, members_evaluated: 0, team_total: 0 };
+      if (row.submission_status === 'Evaluated' && row.ai_score != null) {
+        teamMap[team].members_evaluated++;
+        teamMap[team].team_total += Number(row.ai_score);
+      }
+    });
+
+    const scoreboard = Object.values(teamMap)
+      .map((t) => ({
+        team:              t.team,
+        members_evaluated: t.members_evaluated,
+        team_total:        t.team_total,
+        average_score:     t.members_evaluated > 0 ? Math.round(t.team_total / t.members_evaluated) : 0
+      }))
+      .sort((a, b) => b.team_total - a.team_total);
+
+    return res.status(200).json({ success: true, scoreboard });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message || 'Failed to fetch scoreboard.' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ADMIN API ROUTES — Features 1–15
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── GET /api/admin/participants ───────────────────────────────────────────────
+// All 24 participants with full assignment + submission + score data
+app.get('/api/admin/participants', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('main_event_assignments')
+      .select('*')
+      .order('shuffled_group', { ascending: true });
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    return res.status(200).json({ success: true, participants: data || [] });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ── GET /api/admin/overview ───────────────────────────────────────────────────
+// Counts + recent submissions + task distribution grouped by shuffled group
+app.get('/api/admin/overview', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('main_event_assignments')
+      .select('*')
+      .order('submitted_at', { ascending: false });
+    if (error) return res.status(500).json({ success: false, message: error.message });
+
+    const all        = data || [];
+    const total      = all.length;
+    const submitted  = all.filter(r => r.submission_status === 'Submitted' || r.submission_status === 'Evaluated').length;
+    const evaluated  = all.filter(r => r.submission_status === 'Evaluated').length;
+    const pending    = total - submitted;
+    const recent     = all.filter(r => r.github_repo).slice(0, 8);
+
+    // Group distribution for task assignments section
+    const byGroup = {};
+    all.forEach(r => {
+      if (!byGroup[r.shuffled_group]) byGroup[r.shuffled_group] = [];
+      byGroup[r.shuffled_group].push(r);
+    });
+
+    return res.status(200).json({
+      success: true,
+      counts: { total, submitted, evaluated, pending },
+      recent,
+      task_distribution: byGroup
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ── GET /api/admin/team-scores ────────────────────────────────────────────────
+// Per-team aggregation: main_event_score + fizzbuzz_score + manual scores
+app.get('/api/admin/team-scores', async (req, res) => {
+  try {
+    const [assignRes, manualRes] = await Promise.all([
+      supabase.from('main_event_assignments')
+        .select('original_team, main_event_score, fizzbuzz_score, ai_score'),
+      supabase.from('manual_event_scores')
+        .select('original_team, event_name, marks')
+    ]);
+
+    if (assignRes.error) return res.status(500).json({ success: false, message: assignRes.error.message });
+
+    const teamMap = {};
+    (assignRes.data || []).forEach(r => {
+      const t = r.original_team || 'Unknown';
+      if (!teamMap[t]) teamMap[t] = { team: t, main_event_total: 0, fizzbuzz_total: 0, manual_total: 0, grand_total: 0 };
+      teamMap[t].main_event_total += Number(r.main_event_score || 0);
+      teamMap[t].fizzbuzz_total   += Number(r.fizzbuzz_score   || 0);
+    });
+
+    (manualRes.data || []).forEach(r => {
+      const t = r.original_team || 'Unknown';
+      if (!teamMap[t]) teamMap[t] = { team: t, main_event_total: 0, fizzbuzz_total: 0, manual_total: 0, grand_total: 0 };
+      teamMap[t].manual_total += Number(r.marks || 0);
+    });
+
+    const scores = Object.values(teamMap).map(t => {
+      t.grand_total = t.main_event_total + t.fizzbuzz_total + t.manual_total;
+      return t;
+    }).sort((a, b) => b.grand_total - a.grand_total);
+
+    return res.status(200).json({ success: true, scores });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ── GET /api/admin/podium ─────────────────────────────────────────────────────
+// Same as team-scores but shaped for podium display
+app.get('/api/admin/podium', async (req, res) => {
+  try {
+    const [assignRes, manualRes] = await Promise.all([
+      supabase.from('main_event_assignments')
+        .select('original_team, main_event_score, fizzbuzz_score'),
+      supabase.from('manual_event_scores')
+        .select('original_team, event_name, marks')
+    ]);
+
+    if (assignRes.error) return res.status(500).json({ success: false, message: assignRes.error.message });
+
+    const teamMap = {};
+    (assignRes.data || []).forEach(r => {
+      const t = r.original_team || 'Unknown';
+      if (!teamMap[t]) teamMap[t] = { team: t, main_event_total: 0, fizzbuzz_total: 0, manual_total: 0, members_scored: 0 };
+      if (r.main_event_score > 0 || r.fizzbuzz_score > 0) teamMap[t].members_scored++;
+      teamMap[t].main_event_total += Number(r.main_event_score || 0);
+      teamMap[t].fizzbuzz_total   += Number(r.fizzbuzz_score   || 0);
+    });
+
+    // Group manual by event per team
+    const manualByTeam = {};
+    (manualRes.data || []).forEach(r => {
+      const t = r.original_team;
+      if (!manualByTeam[t]) manualByTeam[t] = {};
+      manualByTeam[t][r.event_name] = Number(r.marks || 0);
+    });
+
+    const podium = Object.values(teamMap).map(t => {
+      const manual = manualByTeam[t.team] || {};
+      const manual_total = Object.values(manual).reduce((s, v) => s + v, 0);
+      return {
+        ...t,
+        manual_breakdown: manual,
+        manual_total,
+        grand_total: t.main_event_total + t.fizzbuzz_total + manual_total
+      };
+    }).sort((a, b) => b.grand_total - a.grand_total);
+
+    return res.status(200).json({ success: true, podium });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ── POST /api/admin/unlock-submission ─────────────────────────────────────────
+// Coordinator unlocks a participant's submission so they can resubmit
+app.post('/api/admin/unlock-submission', async (req, res) => {
+  try {
+    const participant_id = String(req.body?.participant_id || '').trim();
+    if (!participant_id) return res.status(400).json({ success: false, message: 'participant_id is required.' });
+
+    const { error } = await supabase
+      .from('main_event_assignments')
+      .update({
+        github_repo:        null,
+        github_owner:       null,
+        github_repo_name:   null,
+        github_branch:      null,
+        submitted_at:       null,
+        submission_status:  'Pending',
+        evaluation_status:  'Pending',
+        submission_locked:  false,
+        ai_score:           null,
+        ai_feedback:        null,
+        ui_score:           null,
+        task_match_score:   null,
+        logic_score:        null,
+        creativity_score:   null,
+        code_quality_score: null
+      })
+      .eq('participant_id', participant_id);
+
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    return res.status(200).json({ success: true, message: 'Submission unlocked. Participant can resubmit.' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ── POST /api/admin/update-main-event-score ───────────────────────────────────
+app.post('/api/admin/update-main-event-score', async (req, res) => {
+  try {
+    const participant_id    = String(req.body?.participant_id || '').trim();
+    const main_event_score  = Number(req.body?.score);
+    if (!participant_id || isNaN(main_event_score)) {
+      return res.status(400).json({ success: false, message: 'participant_id and score are required.' });
+    }
+    const { error } = await supabase
+      .from('main_event_assignments')
+      .update({ main_event_score: Math.min(100, Math.max(0, main_event_score)) })
+      .eq('participant_id', participant_id);
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ── POST /api/admin/update-fizzbuzz-score ─────────────────────────────────────
+app.post('/api/admin/update-fizzbuzz-score', async (req, res) => {
+  try {
+    const participant_id = String(req.body?.participant_id || '').trim();
+    const fizzbuzz_score = Number(req.body?.score);
+    if (!participant_id || isNaN(fizzbuzz_score)) {
+      return res.status(400).json({ success: false, message: 'participant_id and score are required.' });
+    }
+    const { error } = await supabase
+      .from('main_event_assignments')
+      .update({ fizzbuzz_score: Math.min(100, Math.max(0, fizzbuzz_score)) })
+      .eq('participant_id', participant_id);
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ── POST /api/admin/manual-score ──────────────────────────────────────────────
+// Upsert manual event marks for an original team
+app.post('/api/admin/manual-score', async (req, res) => {
+  try {
+    const event_name    = String(req.body?.event_name    || '').trim();
+    const original_team = String(req.body?.original_team || '').trim();
+    const marks         = Number(req.body?.marks);
+
+    if (!event_name || !original_team || isNaN(marks)) {
+      return res.status(400).json({ success: false, message: 'event_name, original_team, and marks are required.' });
+    }
+
+    const { error } = await supabase
+      .from('manual_event_scores')
+      .upsert({
+        event_name,
+        original_team,
+        marks: Math.min(100, Math.max(0, marks)),
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'event_name,original_team' });
+
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    return res.status(200).json({ success: true, message: 'Marks saved.' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ── GET /api/admin/event-progress ─────────────────────────────────────────────
+// Dynamic event flow status for all phases
+app.get('/api/admin/event-progress', async (req, res) => {
+  try {
+    const [assignRes, teamsRes, manualRes] = await Promise.all([
+      supabase.from('main_event_assignments').select('submission_status, fizzbuzz_score, main_event_score, original_team'),
+      supabase.from('participants').select('id'),
+      supabase.from('manual_event_scores').select('event_name, original_team')
+    ]);
+
+    const all          = assignRes.data || [];
+    const totalPart    = (teamsRes.data  || []).length;
+    const totalAssign  = all.length;
+    const submitted    = all.filter(r => r.submission_status === 'Submitted' || r.submission_status === 'Evaluated').length;
+    const evaluated    = all.filter(r => r.submission_status === 'Evaluated').length;
+    const fizzDone     = all.filter(r => r.fizzbuzz_score != null && r.fizzbuzz_score > 0).length;
+    const mainDone     = all.filter(r => r.main_event_score != null && r.main_event_score > 0).length;
+
+    // Manual events — need all 6 teams to have marks for each event
+    const MANUAL_EVENTS = ['Code Imposter', 'Sherlock Holmes', 'Drawing'];
+    const manualRecords = manualRes.data || [];
+    const manualStatus  = {};
+    MANUAL_EVENTS.forEach(ev => {
+      const count = manualRecords.filter(r => r.event_name === ev).length;
+      manualStatus[ev] = count;
+    });
+
+    const uniqueTeams = [...new Set(all.map(r => r.original_team))].length;
+
+    return res.status(200).json({
+      success: true,
+      progress: {
+        registration:    { done: totalPart >= 24,        label: `${totalPart}/24 participants` },
+        shuffle:         { done: totalAssign >= 24,      label: totalAssign >= 24 ? 'Groups assigned' : 'Not run' },
+        github_submission:{ done: submitted >= 24,       label: `${submitted}/24 submitted` },
+        ai_evaluation:   { done: evaluated >= 24,        label: `${evaluated}/24 evaluated` },
+        fizzbuzz:        { done: fizzDone >= totalAssign,label: `${fizzDone}/${totalAssign} scored` },
+        code_imposter:   { done: (manualStatus['Code Imposter']||0) >= uniqueTeams, label: `${manualStatus['Code Imposter']||0}/${uniqueTeams} teams` },
+        sherlock_holmes: { done: (manualStatus['Sherlock Holmes']||0) >= uniqueTeams, label: `${manualStatus['Sherlock Holmes']||0}/${uniqueTeams} teams` },
+        drawing:         { done: (manualStatus['Drawing']||0) >= uniqueTeams, label: `${manualStatus['Drawing']||0}/${uniqueTeams} teams` },
+        final_podium:    { done: evaluated >= 24 && fizzDone >= totalAssign && MANUAL_EVENTS.every(ev => (manualStatus[ev]||0) >= uniqueTeams), label: 'All events complete' }
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ── GET /api/admin/manual-scores ──────────────────────────────────────────────
+// All manual event scores
+app.get('/api/admin/manual-scores', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('manual_event_scores').select('*');
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    return res.status(200).json({ success: true, scores: data || [] });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
   }
 });
 
