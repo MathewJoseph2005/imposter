@@ -21,6 +21,8 @@
     <nav class="flex-1 p-4 space-y-1.5 overflow-y-auto font-orbitron text-xs">
         <button onclick="switchTab('overview')"     id="nav-overview"     class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-crimson-600 text-white shadow-lg shadow-crimson-600/30 transition-all">📊 Overview</button>
         <button onclick="switchTab('participants')" id="nav-participants" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardgray hover:text-gray-200 transition-all">👥 Participants</button>
+        <button onclick="switchTab('timers')"       id="nav-timers"       class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardgray hover:text-gray-200 transition-all">⏱️ Event Timers</button>
+        <button onclick="switchTab('fizzbuzz')"     id="nav-fizzbuzz"     class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardgray hover:text-gray-200 transition-all">📊 FizzBuzz</button>
         <button onclick="switchTab('manual')"       id="nav-manual"       class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardgray hover:text-gray-200 transition-all">✏️ Manual Scoring</button>
         <button onclick="switchTab('podium')"       id="nav-podium"       class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardgray hover:text-gray-200 transition-all">🏆 Team Podium</button>
         <button onclick="switchTab('flow')"         id="nav-flow"         class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardgray hover:text-gray-200 transition-all">👁️ Event Flow</button>
@@ -130,6 +132,45 @@
             <div id="participants-list" class="space-y-2"></div>
         </div>
 
+        <!-- ══ TAB: EVENT TIMERS (Part 6) ══ -->
+        <div id="tab-timers" class="tab-content hidden space-y-5">
+            <!-- FizzBuzz ON/OFF toggle (prominent) -->
+            <div class="bg-cardgray border border-bordergray rounded-2xl p-5 shadow-xl flex items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-sm font-orbitron font-bold text-white uppercase tracking-wider">FizzBuzz Round</h3>
+                    <p class="text-xs text-gray-400 mt-1 font-rajdhani">Turn ON to let participants enter FizzBuzz. Turn OFF to close the round.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span id="fb-toggle-status" class="text-xs font-orbitron text-rose-400">OFF</span>
+                    <button onclick="toggleFizzBuzz()" id="fb-toggle-btn"
+                        class="text-sm font-orbitron px-5 py-2 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600 hover:text-white transition-all">
+                        Turn ON
+                    </button>
+                </div>
+            </div>
+            <div class="flex items-center justify-between">
+                <h3 class="text-xs font-orbitron font-bold text-white uppercase tracking-wider">All Event Timers</h3>
+                <button onclick="loadTimers()" class="text-xs font-orbitron px-3 py-1.5 rounded-lg bg-cyan-600/20 text-cyan-400 border border-cyan-600/30 hover:bg-cyan-600 hover:text-white transition-all">↻ Refresh</button>
+            </div>
+            <div id="timers-grid" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="text-gray-500 font-orbitron text-sm text-center py-8 col-span-2">Loading timers...</div>
+            </div>
+        </div>
+
+        <!-- ══ TAB: FIZZBUZZ MONITOR (Part 11) ══ -->
+        <div id="tab-fizzbuzz" class="tab-content hidden space-y-5">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div class="bg-cardgray border border-bordergray rounded-xl p-4 text-center"><div class="text-2xl font-orbitron font-bold text-emerald-400" id="fb-cnt-submitted">0</div><div class="text-xs text-gray-400 mt-1 font-orbitron">Groups Submitted</div></div>
+                <div class="bg-cardgray border border-bordergray rounded-xl p-4 text-center"><div class="text-2xl font-orbitron font-bold text-rose-400"    id="fb-cnt-pending">6</div><div class="text-xs text-gray-400 mt-1 font-orbitron">Groups Pending</div></div>
+                <div class="bg-cardgray border border-bordergray rounded-xl p-4 text-center"><div class="text-xl font-orbitron font-bold text-amber-400 truncate" id="fb-first">—</div><div class="text-xs text-gray-400 mt-1 font-orbitron">1st Submitted</div></div>
+                <div class="bg-cardgray border border-bordergray rounded-xl p-4 text-center"><div class="text-xl font-orbitron font-bold text-cyan-400 truncate" id="fb-second">—</div><div class="text-xs text-gray-400 mt-1 font-orbitron">2nd Submitted</div></div>
+            </div>
+            <div class="bg-cardgray border border-bordergray rounded-2xl p-5 shadow-xl">
+                <h3 class="text-xs font-orbitron font-bold text-white uppercase tracking-wider mb-3">Group Submissions</h3>
+                <div id="fizzbuzz-groups" class="space-y-2"></div>
+            </div>
+        </div>
+
         <!-- ══ TAB: MANUAL SCORING ══ -->
         <div id="tab-manual" class="tab-content hidden space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-5" id="manual-events-grid">
@@ -175,13 +216,22 @@
 <script>
 const API = 'http://localhost:3000';
 const MANUAL_EVENTS = ['Code Imposter','Sherlock Holmes','Drawing'];
+const TIMER_EVENTS  = [
+    { name:'Main Event',      secs:2700, label:'Main Event (45 min)' },
+    { name:'FizzBuzz',        secs:900,  label:'FizzBuzz (15 min)' },
+    { name:'Code Imposter',   secs:1200, label:'Code Imposter (20 min)' },
+    { name:'Sherlock Holmes', secs:2700, label:'Sherlock Holmes (45 min)' }
+];
 
 // ── State ──────────────────────────────────────────────────────────────────────
-let allParticipants = [];   // from /api/admin/participants
-let teamScores      = [];   // from /api/admin/team-scores
-let podiumData      = [];   // from /api/admin/podium
-let manualScores    = {};   // { 'Code Imposter': { TeamA: 80, ... }, ... }
-let eventProgress   = {};   // from /api/admin/event-progress
+let allParticipants   = [];
+let teamScores        = [];
+let podiumData        = [];
+let manualScores      = {};
+let eventProgress     = {};
+let allTimers         = [];   // from /api/event-timers (real event_timers table)
+let fizzSubmissions   = [];   // from /api/admin/fizzbuzz/submissions
+let timerCountdowns   = {};   // local interval handles keyed by event name
 
 // ── Stopwatch ──────────────────────────────────────────────────────────────────
 let _swInt=null,_swSec=0;
@@ -202,10 +252,12 @@ function switchTab(id){
         b.className='w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardgray hover:text-gray-200 transition-all';
     });
     document.getElementById('nav-'+id).className='w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-crimson-600 text-white shadow-lg shadow-crimson-600/30 transition-all';
-    const titles={overview:'Overview',participants:'Participants',manual:'Manual Scoring',podium:'Team Podium',flow:'Event Flow'};
+    const titles={overview:'Overview',participants:'Participants',timers:'Event Timers',fizzbuzz:'FizzBuzz Monitor',manual:'Manual Scoring',podium:'Team Podium',flow:'Event Flow'};
     document.getElementById('header-title').innerText=titles[id]||id;
     if(id==='overview')     renderOverview();
     if(id==='participants') renderParticipants();
+    if(id==='timers')       { renderTimers(); refreshFizzToggle(); }
+    if(id==='fizzbuzz')     renderFizzBuzzMonitor();
     if(id==='manual')       renderManual();
     if(id==='podium')       renderPodium();
     if(id==='flow')         renderFlow();
@@ -219,19 +271,22 @@ function toggleAcc(id){
 // ── Fetch ──────────────────────────────────────────────────────────────────────
 async function fetchAll(){
     try {
-        const [r1,r2,r3,r4,r5] = await Promise.all([
+        const [r1,r2,r3,r4,r5,r6,r7] = await Promise.all([
             fetch(API+'/api/admin/participants').then(r=>r.json()).catch(()=>({success:false})),
             fetch(API+'/api/admin/team-scores').then(r=>r.json()).catch(()=>({success:false})),
             fetch(API+'/api/admin/podium').then(r=>r.json()).catch(()=>({success:false})),
             fetch(API+'/api/admin/manual-scores').then(r=>r.json()).catch(()=>({success:false})),
-            fetch(API+'/api/admin/event-progress').then(r=>r.json()).catch(()=>({success:false}))
+            fetch(API+'/api/admin/event-progress').then(r=>r.json()).catch(()=>({success:false})),
+            fetch(API+'/api/event-timers').then(r=>r.json()).catch(()=>({success:false})),
+            fetch(API+'/api/admin/fizzbuzz/submissions-v2').then(r=>r.json()).catch(()=>({success:false}))
         ]);
         allParticipants = r1.success ? (r1.participants||[]) : [];
         teamScores      = r2.success ? (r2.scores||[])       : [];
         podiumData      = r3.success ? (r3.podium||[])        : [];
         eventProgress   = r5.success ? (r5.progress||{})     : {};
+        allTimers       = Array.isArray(r6) ? r6 : (r6.timers || r6.data || []);
+        fizzSubmissions = r7.success ? (r7.submissions||[])   : [];
 
-        // Build manualScores lookup
         manualScores={};
         MANUAL_EVENTS.forEach(ev=>{ manualScores[ev]={}; });
         (r4.success ? (r4.scores||[]) : []).forEach(s=>{
@@ -239,12 +294,30 @@ async function fetchAll(){
             manualScores[s.event_name][s.original_team]=s.marks;
         });
 
-        // Update sidebar status
         const evaluated = allParticipants.filter(a=>a.submission_status==='Evaluated').length;
         document.getElementById('sidebar-status').innerText=`${evaluated}/${allParticipants.length} Evaluated`;
-
         populateFilters();
     } catch(ex){ console.error('fetchAll',ex); }
+}
+
+async function loadTimers(){
+    try {
+        const r = await fetch(API+'/api/event-timers');
+        const d = await r.json();
+        // Normalise: API returns { success, timers:[...] } or a raw array
+        const timers = Array.isArray(d) ? d : (d.timers || d.data || []);
+        if(timers.length > 0) {
+            allTimers = timers;
+            renderTimers();
+        } else if(!d.success) {
+            // Only show error when fetch itself failed
+            const grid = document.getElementById('timers-grid');
+            if(grid) grid.innerHTML = '<div class="col-span-2 text-rose-400 font-orbitron text-sm text-center py-8">Error loading timers: ' + e(d.message||'Unknown error') + '</div>';
+        }
+    } catch(ex){
+        const grid = document.getElementById('timers-grid');
+        if(grid) grid.innerHTML = '<div class="col-span-2 text-rose-400 font-orbitron text-sm text-center py-8">Cannot reach backend. Is server running?</div>';
+    }
 }
 
 async function refreshAll(){ await fetchAll(); renderCurrentTab(); }
@@ -255,6 +328,8 @@ function renderCurrentTab(){
     const id=el.id.replace('tab-','');
     if(id==='overview')     renderOverview();
     if(id==='participants') renderParticipants();
+    if(id==='timers')       { renderTimers(); refreshFizzToggle(); }
+    if(id==='fizzbuzz')     renderFizzBuzzMonitor();
     if(id==='manual')       renderManual();
     if(id==='podium')       renderPodium();
     if(id==='flow')         renderFlow();
@@ -479,9 +554,19 @@ async function saveManualScore(event_name, original_team, btn){
     try{
         const r=await fetch(API+'/api/admin/manual-score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event_name,original_team,marks:val})});
         const d=await r.json();
-        if(r.ok&&d.success){ await fetchAll(); renderManual(); renderPodium(); renderOverview(); }
-        else { btn.innerText='❌ Failed'; btn.disabled=false; }
-    }catch(ex){ btn.innerText='❌ Error'; btn.disabled=false; }
+        if(r.ok&&d.success){
+            await fetchAll(); renderManual(); renderPodium(); renderOverview();
+        } else {
+            btn.innerText='❌ Failed';
+            btn.disabled=false;
+            // Show the actual error so we can diagnose
+            alert('Save failed: '+(d.message||JSON.stringify(d)));
+        }
+    }catch(ex){
+        btn.innerText='❌ Error';
+        btn.disabled=false;
+        alert('Network error: '+ex.message);
+    }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -526,6 +611,210 @@ function renderPodium(){
             <td class="py-2.5 text-right text-amber-400">${t.manual_total}</td>
             <td class="py-2.5 text-right font-orbitron font-bold text-white">${t.grand_total}</td>
         </tr>`).join('')+`</tbody></table>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PART 6 — EVENT TIMERS
+// ══════════════════════════════════════════════════════════════════════════════
+function fmtSecs(s){
+    s = Math.max(0, Math.floor(s));
+    const m = Math.floor(s/60), sec = s%60;
+    return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+}
+
+function timerStatusColor(status){
+    if(status==='running')  return 'text-emerald-400';
+    if(status==='paused')   return 'text-amber-400';
+    if(status==='finished') return 'text-rose-400';
+    return 'text-gray-400';
+}
+
+function timerStatusLabel(status){
+    if(status==='running')  return '▶ Running';
+    if(status==='paused')   return '⏸ Paused';
+    if(status==='finished') return '⏹ Finished';
+    return '⏺ Idle';
+}
+
+function renderTimers(){
+    const grid = document.getElementById('timers-grid');
+    if(!grid) return;
+
+    if(allTimers.length === 0){
+        grid.innerHTML = '<div class="col-span-2 text-gray-500 font-orbitron text-xs text-center py-8">No timer data received. Check that event_timers table has rows and backend is running.</div>';
+        return;
+    }
+
+    // Clear old countdown intervals
+    Object.values(timerCountdowns).forEach(clearInterval);
+    timerCountdowns = {};
+
+    grid.innerHTML = allTimers.map(t => {
+        // Support both old (id-based) and new (event_key-based) schema
+        const key   = t.event_key || t.event_name;
+        const enc   = key.replace(/[^a-zA-Z0-9]/g,'_');
+        const sColor = timerStatusColor(t.status);
+        const remSecs = t.remaining_seconds != null ? t.remaining_seconds : (t.remaining_secs != null ? t.remaining_secs : 0);
+        const durSecs = t.duration_minutes ? t.duration_minutes*60 : (t.duration_secs||900);
+        return `<div class="bg-cardgray border border-bordergray rounded-2xl p-5 shadow-xl space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-sm font-orbitron font-bold text-white">${e(t.event_name)}</h3>
+                <span class="text-xs font-orbitron ${sColor}" id="ts-label-${enc}">${timerStatusLabel(t.status)}</span>
+            </div>
+            <div class="text-center">
+                <div class="text-4xl font-orbitron font-bold ${sColor} tracking-widest" id="ts-display-${enc}">${fmtSecs(remSecs)}</div>
+                <div class="text-xs text-gray-500 mt-1 font-orbitron">/ ${fmtSecs(durSecs)} total</div>
+            </div>
+            <div class="flex gap-2 flex-wrap justify-center">
+                <button onclick="timerAction('${e(key)}','start',this)"
+                    class="text-xs font-orbitron px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600 hover:text-white transition-all"
+                    ${t.status==='running'||t.status==='finished'?'disabled':''}>▶ Start</button>
+                <button onclick="timerAction('${e(key)}','pause',this)"
+                    class="text-xs font-orbitron px-3 py-1.5 rounded-lg bg-amber-600/20 text-amber-400 border border-amber-500/30 hover:bg-amber-600 hover:text-white transition-all"
+                    ${t.status!=='running'?'disabled':''}>⏸ Pause</button>
+                <button onclick="timerAction('${e(key)}','resume',this)"
+                    class="text-xs font-orbitron px-3 py-1.5 rounded-lg bg-cyan-600/20 text-cyan-400 border border-cyan-600/30 hover:bg-cyan-600 hover:text-white transition-all"
+                    ${t.status!=='paused'?'disabled':''}>▶▶ Resume</button>
+                <button onclick="timerAction('${e(key)}','reset',this)"
+                    class="text-xs font-orbitron px-3 py-1.5 rounded-lg bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600 hover:text-white transition-all">↺ Reset</button>
+            </div>
+        </div>`;
+    }).join('');
+
+    // tickTimerDisplays() handles per-second countdown globally
+}
+
+async function timerAction(eventKey, action, btn){
+    const orig = btn.textContent;
+    btn.disabled = true; btn.textContent = '...';
+    try {
+        // New schema: /api/event/start|pause|resume|reset with body {eventKey}
+        const r = await fetch(`${API}/api/event/${action}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ eventKey })
+        });
+        const d = await r.json();
+        if(!d.success) {
+            btn.textContent = '❌';
+            setTimeout(()=>{ btn.textContent=orig; btn.disabled=false; }, 1500);
+            return;
+        }
+        await loadTimers();
+    } catch(ex) {
+        btn.textContent = '❌';
+        setTimeout(()=>{ btn.textContent=orig; btn.disabled=false; }, 1500);
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PART 11 — FIZZBUZZ MONITOR
+// ══════════════════════════════════════════════════════════════════════════════
+function renderFizzBuzzMonitor(){
+    const submitted = fizzSubmissions.length;
+    const pending   = Math.max(0, 6 - submitted);
+
+    const el = (id) => document.getElementById(id);
+    if(el('fb-cnt-submitted')) el('fb-cnt-submitted').innerText = submitted;
+    if(el('fb-cnt-pending'))   el('fb-cnt-pending').innerText   = pending;
+    if(el('fb-first'))         el('fb-first').innerText  = fizzSubmissions[0]?.shuffled_group || '—';
+    if(el('fb-second'))        el('fb-second').innerText = fizzSubmissions[1]?.shuffled_group || '—';
+
+    const container = el('fizzbuzz-groups');
+    if(!container) return;
+
+    // Build a set of all 6 groups from participants
+    const allGroups = [...new Set(allParticipants.map(p=>p.shuffled_group).filter(Boolean))].sort((a,b)=>
+        parseInt(a.replace(/\D/g,''))-parseInt(b.replace(/\D/g,'')));
+
+    const subByGroup = {};
+    fizzSubmissions.forEach(s => { subByGroup[s.shuffled_group] = s; });
+
+    if(allGroups.length === 0){
+        container.innerHTML = '<div class="text-gray-500 font-orbitron text-sm text-center py-4">Run shuffle first to see groups.</div>';
+        return;
+    }
+
+    container.innerHTML = allGroups.map((gn, idx) => {
+        const sub = subByGroup[gn];
+        if(sub){
+            const scored = sub.is_correct !== null && sub.is_correct !== undefined;
+            const time   = sub.submitted_at ? new Date(sub.submitted_at).toLocaleTimeString() : '--';
+            const rank   = fizzSubmissions.findIndex(s=>s.shuffled_group===gn)+1;
+            return `<div class="bg-black/40 border border-emerald-500/30 rounded-xl px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                    <span class="font-orbitron text-xs font-bold text-emerald-400">${e(gn)}</span>
+                    <span class="ml-2 text-[10px] text-gray-400">#${rank} · by ${e(sub.submitted_by)} · ${time}</span>
+                    ${sub.imposter_sabotaged ? '<span class="ml-2 text-[9px] bg-rose-500/10 text-rose-400 border border-rose-500/20 px-1 rounded font-orbitron">⚠ SABOTAGE DETECTED</span>' : ''}
+                </div>
+                <div class="flex gap-2 items-center">
+                    ${scored
+                        ? `<span class="text-[10px] font-orbitron ${sub.is_correct?'text-emerald-400':'text-rose-400'}">${sub.is_correct?'✅ Correct':'❌ Wrong'}</span>`
+                        : `<button onclick="scoreFizzGroup('${e(gn)}',true,this)"  class="text-xs font-orbitron px-2.5 py-1 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-600 hover:text-white transition-all">✅ Mark Correct</button>
+                           <button onclick="scoreFizzGroup('${e(gn)}',false,this)" class="text-xs font-orbitron px-2.5 py-1 rounded-lg bg-rose-600/20 text-rose-400 border border-rose-500/20 hover:bg-rose-600 hover:text-white transition-all">❌ Mark Wrong</button>`
+                    }
+                </div>
+            </div>`;
+        } else {
+            return `<div class="bg-black/20 border border-bordergray rounded-xl px-4 py-3 flex items-center justify-between">
+                <span class="font-orbitron text-xs text-gray-500">${e(gn)}</span>
+                <span class="text-[10px] bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2 py-0.5 rounded font-orbitron">⬜ Pending</span>
+            </div>`;
+        }
+    }).join('');
+}
+
+async function scoreFizzGroup(shuffled_group, is_correct, btn){
+    btn.disabled = true; btn.textContent = '...';
+    try {
+        const r = await fetch(API+'/api/admin/fizzbuzz/score-v2', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ shuffled_group, is_correct })
+        });
+        const d = await r.json();
+        if(d.success){ await fetchAll(); renderFizzBuzzMonitor(); renderPodium(); }
+        else { btn.textContent='❌ '+d.message; btn.disabled=false; }
+    } catch(ex){ btn.textContent='❌ Error'; btn.disabled=false; }
+}
+
+// ── FizzBuzz ON/OFF toggle ────────────────────────────────────────────────────
+async function toggleFizzBuzz(){
+    const btn = document.getElementById('fb-toggle-btn');
+    const lbl = document.getElementById('fb-toggle-status');
+    const isOn = btn.textContent.trim() === 'Turn OFF';
+    btn.disabled = true; btn.textContent = '...';
+    try {
+        const r = await fetch(API+'/api/admin/fizzbuzz/toggle', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ action: isOn ? 'off' : 'on' })
+        });
+        const d = await r.json();
+        if(d.success){
+            updateFizzBuzzToggleUI(d.fizzbuzz_open);
+        }
+        btn.disabled = false;
+    } catch(ex){ btn.textContent = isOn?'Turn OFF':'Turn ON'; btn.disabled=false; }
+}
+
+function updateFizzBuzzToggleUI(isOpen){
+    const btn = document.getElementById('fb-toggle-btn');
+    const lbl = document.getElementById('fb-toggle-status');
+    if(!btn || !lbl) return;
+    if(isOpen){
+        lbl.textContent = 'ON'; lbl.className = 'text-xs font-orbitron text-emerald-400';
+        btn.textContent = 'Turn OFF'; btn.className = 'text-sm font-orbitron px-5 py-2 rounded-lg bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600 hover:text-white transition-all';
+    } else {
+        lbl.textContent = 'OFF'; lbl.className = 'text-xs font-orbitron text-rose-400';
+        btn.textContent = 'Turn ON'; btn.className = 'text-sm font-orbitron px-5 py-2 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600 hover:text-white transition-all';
+    }
+}
+
+async function refreshFizzToggle(){
+    try {
+        const r = await fetch(API+'/api/fizzbuzz/toggle');
+        const d = await r.json();
+        if(d.success) updateFizzBuzzToggleUI(d.fizzbuzz_open);
+    } catch(e){}
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -582,11 +871,40 @@ function showFB(name,data){
 }
 function closeFB(){ document.getElementById('fb-modal').classList.add('hidden'); }
 
-// ── Init ───────────────────────────────────────────────────────────────────────
+// ── Init ─────────────────────────────────────────────────────────────────────
+// Tick running timer displays every second without rebuilding cards
+var _timerTick = 0;
+function tickTimerDisplays(){
+    _timerTick++;
+    allTimers.forEach(function(t){
+        if(t.status !== 'running') return;
+        var rawKey = t.event_key || t.event_name || '';
+        var key    = rawKey.replace(/[^a-zA-Z0-9]/g,'_');
+        var disp   = document.getElementById('ts-display-'+key);
+        var lbl    = document.getElementById('ts-label-'+key);
+        if(!disp) return;
+        t.remaining_seconds = Math.max(0,(t.remaining_seconds||0)-1);
+        t.remaining_secs    = t.remaining_seconds;
+        disp.innerText = fmtSecs(t.remaining_seconds);
+        if(t.remaining_seconds <= 0){
+            t.status = 'finished';
+            disp.className = 'text-4xl font-orbitron font-bold text-rose-400 tracking-widest';
+            if(lbl){ lbl.innerText='Finished'; lbl.className='text-xs font-orbitron text-rose-400'; }
+            // Persist finished state to DB
+            fetch(API+'/api/event/finish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventKey:rawKey})}).catch(function(){});
+        } else if(_timerTick % 10 === 0){
+            // Persist remaining_seconds directly — avoids pause/resume race conditions
+            fetch(API+'/api/event/tick',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventKey:rawKey, remaining_seconds:t.remaining_seconds})}).catch(function(){});
+        }
+    });
+}
+
 (async function init(){
     await fetchAll();
+    await refreshFizzToggle();
     renderOverview();
-    setInterval(async()=>{ await fetchAll(); renderCurrentTab(); },30000);
+    setInterval(async()=>{ await fetchAll(); await refreshFizzToggle(); renderCurrentTab(); },30000);
+    setInterval(tickTimerDisplays, 1000);
 })();
 </script>
 </body>

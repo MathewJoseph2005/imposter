@@ -54,6 +54,12 @@
         .alert-success { background-color:rgba(0,255,128,0.08); border:1px solid var(--green); color:var(--green); }
         .alert-error { background-color:rgba(220,20,60,0.14); border:1px solid var(--primary-crimson); color:var(--primary-red); }
         .submitted-banner { background:rgba(0,255,128,0.06); border:1px solid var(--green); border-radius:4px; padding:14px 18px; color:var(--green); font-size:0.88rem; text-align:center; letter-spacing:1px; word-break:break-all; }
+        /* FizzBuzz gate */
+        .fizzbuzz-gate { background:rgba(0,240,255,0.04); border:1px solid rgba(0,240,255,0.3); border-radius:6px; padding:22px 26px; text-align:center; }
+        .fizzbuzz-gate-lbl { font-size:0.65rem; letter-spacing:2px; text-transform:uppercase; color:var(--text-sub); margin-bottom:8px; }
+        .fizzbuzz-gate-msg { font-size:0.9rem; color:var(--cyan); line-height:1.5; margin-bottom:14px; letter-spacing:0.5px; }
+        .btn-fizzbuzz { display:inline-block; padding:13px 36px; background:linear-gradient(135deg,var(--cyan),#4b8cff); color:#00131a; font-family:'Courier New',monospace; font-size:0.95rem; font-weight:bold; text-transform:uppercase; letter-spacing:2px; border:none; border-radius:4px; cursor:pointer; text-decoration:none; transition:opacity 0.2s,transform 0.15s; }
+        .btn-fizzbuzz:hover { opacity:0.88; transform:translateY(-1px); }
         /* ── AI Evaluation Card ── */
         .eval-card { background:rgba(0,0,0,0.5); border:1px solid var(--border-mid); border-radius:6px; padding:24px 26px; }
         .eval-card.evaluating { border-color:rgba(0,240,255,0.4); }
@@ -75,7 +81,7 @@
         .eval-feedback-label { font-size:0.65rem; letter-spacing:2px; text-transform:uppercase; color:var(--text-sub); margin-bottom:6px; }
         .eval-feedback-text { font-size:0.88rem; color:var(--text-main); line-height:1.68; }
         .eval-pending { font-size:0.88rem; color:var(--text-sub); text-align:center; padding:8px 0; letter-spacing:1px; }
-        @media (max-width:600px) { header{padding:18px 5%;} .meta-row{gap:16px;} .task-title-text{font-size:1rem;} .eval-score-num{font-size:2.2rem;} }
+        
     </style>
 </head>
 <body>
@@ -129,6 +135,16 @@
                     <div class="eval-feedback-label">AI Feedback</div>
                     <div class="eval-feedback-text" id="eval-feedback-text"></div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+        <!-- FizzBuzz Navigation Gate (Part 5) — shown after GitHub submission -->
+        <div id="fizzbuzz-section" style="display:none;">
+            <div class="fizzbuzz-gate">
+                <div class="fizzbuzz-gate-lbl">Next Round</div>
+                <div class="fizzbuzz-gate-msg" id="fizzbuzz-gate-msg">Repository submitted. Waiting for coordinator to start FizzBuzz.</div>
+                <a href="fizzbuzz.html" id="fizzbuzz-btn" class="btn-fizzbuzz" style="display:none;">ENTER FIZZBUZZ ROUND &rarr;</a>
             </div>
         </div>
     </div>
@@ -325,6 +341,96 @@
         });
 
         loadAssignment();
+
+        // ── FizzBuzz gate: polls /api/fizzbuzz/toggle every 3s after submission ──
+        // Shows the ENTER FIZZBUZZ ROUND button live when coordinator toggles ON.
+        var _fbGateInterval = null;
+        var _fbGateActive   = false;
+
+        function showFizzBuzzGate() {
+            var sec = document.getElementById('fizzbuzz-section');
+            if (sec) sec.style.display = 'block';
+        }
+
+        function updateFizzBuzzGateUI(fizzbuzzOpen, status) {
+            var btn = document.getElementById('fizzbuzz-btn');
+            var msg = document.getElementById('fizzbuzz-gate-msg');
+            showFizzBuzzGate();
+
+            if (fizzbuzzOpen) {
+                // FizzBuzz is ON — show neon button
+                if (msg) {
+                    msg.innerText = '✅ Repository Submitted Successfully. FizzBuzz round is now OPEN!';
+                    msg.style.color = 'var(--cyan)';
+                }
+                if (btn) {
+                    btn.style.display   = 'inline-block';
+                    btn.style.opacity   = '1';
+                    btn.style.cursor    = 'pointer';
+                    btn.textContent     = 'ENTER FIZZBUZZ ROUND →';
+                    btn.onclick         = null; // restore default navigation
+                    btn.href            = 'fizzbuzz.html';
+                }
+            } else if (status === 'finished') {
+                if (msg) {
+                    msg.innerText     = 'FizzBuzz round has ended.';
+                    msg.style.color   = 'var(--primary-red, #ff1e42)';
+                }
+                if (btn) {
+                    btn.style.display = 'inline-block';
+                    btn.style.opacity = '0.4';
+                    btn.style.cursor  = 'not-allowed';
+                    btn.textContent   = 'FizzBuzz Closed';
+                    btn.onclick       = function(e){ e.preventDefault(); };
+                }
+                clearInterval(_fbGateInterval); // no need to keep polling
+            } else {
+                // FizzBuzz is OFF / waiting
+                if (msg) {
+                    msg.innerText   = '✅ Repository Submitted Successfully.\nWaiting for Coordinator to open FizzBuzz...';
+                    msg.style.color = '';
+                }
+                if (btn) btn.style.display = 'none';
+            }
+        }
+
+        async function checkFizzBuzzGate() {
+            try {
+                var r    = await fetch('http://localhost:3000/api/fizzbuzz/toggle');
+                var data = await r.json();
+                if (!data.success) return;
+                updateFizzBuzzGateUI(data.fizzbuzz_open, data.status);
+            } catch(e){}
+        }
+
+        // Override lockForm to start gate polling as soon as submission is locked
+        var _origLockForm = lockForm;
+        lockForm = function(repo, ts, owner, repoName) {
+            _origLockForm(repo, ts, owner, repoName);
+            if (!_fbGateActive) {
+                _fbGateActive = true;
+                showFizzBuzzGate();
+                checkFizzBuzzGate(); // immediate check
+                _fbGateInterval = setInterval(checkFizzBuzzGate, 3000); // poll every 3s
+            }
+        };
+
+        // On page load: if already submitted, show gate immediately and start polling
+        (async function initGate(){
+            try {
+                var res  = await fetch('http://localhost:3000/api/my-assignment/'+PARTICIPANT_ID);
+                var data = await res.json();
+                if (data.success && data.assignment &&
+                    (data.assignment.submission_status === 'Submitted' ||
+                     data.assignment.submission_status === 'Evaluated') &&
+                    data.assignment.github_repo) {
+                    _fbGateActive = true;
+                    showFizzBuzzGate();
+                    checkFizzBuzzGate();
+                    _fbGateInterval = setInterval(checkFizzBuzzGate, 3000);
+                }
+            } catch(e){}
+        })();
     </script>
 </body>
 </html>
