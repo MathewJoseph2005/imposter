@@ -2055,8 +2055,13 @@ function computeRemainingV2(t) {
   }
 
   // paused / idle: return stored remaining (or full if never set)
-  if (t.remaining_seconds != null && t.remaining_seconds > 0) return t.remaining_seconds;
+  // paused / idle / stopped / waiting
+if (['paused', 'idle', 'stopped', 'waiting'].includes(t.status)) {
+  if (t.remaining_seconds != null && t.remaining_seconds > 0) {
+    return t.remaining_seconds;
+  }
   return fullSecs;
+}
 }
 
 // Normalise a DB row to a consistent shape for the frontend
@@ -2128,27 +2133,63 @@ app.post('/api/admin/fizzbuzz/toggle', async (req, res) => {
   } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
 });
 
-// ── POST /api/event/start ─────────────────────────────────────────────────────
+// ── POST /api/event/start ───────────────────────────────────────────
 app.post('/api/event/start', async (req, res) => {
   try {
     const eventKey = resolveEventKey(String(req.body?.eventKey || '').trim());
-    if (!eventKey) return res.status(400).json({ success: false, message: 'eventKey is required.' });
 
-    const { data: t } = await supabase.from('event_timers').select('*').eq('event_key', eventKey).maybeSingle();
-    if (!t) return res.status(404).json({ success: false, message: 'Timer not found: ' + eventKey });
-    if (t.status === 'running') return res.status(400).json({ success: false, message: 'Already running.' });
+    if (!eventKey) {
+      return res.status(400).json({
+        success: false,
+        message: 'eventKey is required.'
+      });
+    }
+
+    const { data: t, error: fetchError } = await supabase
+      .from('event_timers')
+      .select('*')
+      .eq('event_key', eventKey)
+      .single();
+
+    if (fetchError || !t) {
+      return res.status(404).json({
+        success: false,
+        message: `Timer not found: ${eventKey}`
+      });
+    }
 
     const fullSecs = getFullSecs(t, 15);
-    // Always write full duration on Start — prevents leftover 0 from a previous finished run
-    const { error } = await supabase.from('event_timers').update({
+
+    const { error } = await supabase
+      .from('event_timers')
+      .update({
+        status: 'running',
+        started_at: new Date().toISOString(),
+        paused_at: null,
+        remaining_seconds: fullSecs,     // Reset timer to full duration
+        duration_seconds: fullSecs       // Keep DB duration in sync
+      })
+      .eq('event_key', eventKey);
+
+    if (error) {
+      return res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+
+    return res.json({
+      success: true,
       status: 'running',
-      started_at: new Date().toISOString(),
-      paused_at: null,
-      remaining_seconds: fullSecs   // always reset to full, regardless of previous state
-    }).eq('event_key', eventKey);
-    if (error) return res.status(500).json({ success: false, message: error.message });
-    return res.status(200).json({ success: true, status: 'running', remaining_seconds: fullSecs });
-  } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
+      remaining_seconds: fullSecs
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
 });
 
 // ── POST /api/event/pause ─────────────────────────────────────────────────────

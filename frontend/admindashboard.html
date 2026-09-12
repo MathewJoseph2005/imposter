@@ -308,13 +308,18 @@ async function loadTimers(){
         const timers = Array.isArray(d) ? d : (d.timers || d.data || []);
         if(timers.length > 0) {
             allTimers = timers;
-            renderTimers();
+            // Only re-render timer cards if the timers tab is visible (avoid DOM churn)
+            const timersTab = document.getElementById('tab-timers');
+            if(timersTab && !timersTab.classList.contains('hidden')) {
+                renderTimers();
+            }
         } else if(!d.success) {
-            // Only show error when fetch itself failed
             const grid = document.getElementById('timers-grid');
             if(grid) grid.innerHTML = '<div class="col-span-2 text-rose-400 font-orbitron text-sm text-center py-8">Error loading timers: ' + e(d.message||'Unknown error') + '</div>';
         }
+        syncTimerRefresh();
     } catch(ex){
+        stopTimerRefresh();
         const grid = document.getElementById('timers-grid');
         if(grid) grid.innerHTML = '<div class="col-span-2 text-rose-400 font-orbitron text-sm text-center py-8">Cannot reach backend. Is server running?</div>';
     }
@@ -645,24 +650,30 @@ function renderTimers(){
         return;
     }
 
-    // Clear old countdown intervals
+    // Clear any old per-card intervals (legacy cleanup)
     Object.values(timerCountdowns).forEach(clearInterval);
     timerCountdowns = {};
 
     grid.innerHTML = allTimers.map(t => {
-        // Support both old (id-based) and new (event_key-based) schema
-        const key   = t.event_key || t.event_name;
-        const enc   = key.replace(/[^a-zA-Z0-9]/g,'_');
+        const key    = t.event_key || t.event_name;
+        const enc    = key.replace(/[^a-zA-Z0-9]/g,'_');
         const sColor = timerStatusColor(t.status);
-        const remSecs = t.remaining_seconds != null ? t.remaining_seconds : (t.remaining_secs != null ? t.remaining_secs : 0);
         const durSecs = t.duration_minutes ? t.duration_minutes*60 : (t.duration_secs||900);
+
+        // Calculate live displaySeconds using started_at offset
+        let displaySeconds = t.remaining_seconds != null ? t.remaining_seconds : (t.remaining_secs != null ? t.remaining_secs : 0);
+        if (t.status === 'running' && t.started_at) {
+            const elapsed = Math.floor((Date.now() - new Date(t.started_at).getTime()) / 1000);
+            displaySeconds = Math.max(0, displaySeconds - elapsed);
+        }
+
         return `<div class="bg-cardgray border border-bordergray rounded-2xl p-5 shadow-xl space-y-4">
             <div class="flex items-center justify-between">
                 <h3 class="text-sm font-orbitron font-bold text-white">${e(t.event_name)}</h3>
                 <span class="text-xs font-orbitron ${sColor}" id="ts-label-${enc}">${timerStatusLabel(t.status)}</span>
             </div>
             <div class="text-center">
-                <div class="text-4xl font-orbitron font-bold ${sColor} tracking-widest" id="ts-display-${enc}">${fmtSecs(remSecs)}</div>
+                <div class="text-4xl font-orbitron font-bold ${sColor} tracking-widest" id="ts-display-${enc}">${fmtSecs(displaySeconds)}</div>
                 <div class="text-xs text-gray-500 mt-1 font-orbitron">/ ${fmtSecs(durSecs)} total</div>
             </div>
             <div class="flex gap-2 flex-wrap justify-center">
@@ -680,8 +691,26 @@ function renderTimers(){
             </div>
         </div>`;
     }).join('');
+}
 
-    // tickTimerDisplays() handles per-second countdown globally
+// ── 1-second live refresh for timer cards when any timer is running ────────────
+var _timerRefreshInterval = null;
+
+function startTimerRefresh(){
+    if(_timerRefreshInterval) return;  // already running
+    _timerRefreshInterval = setInterval(loadTimers, 1000);
+}
+
+function stopTimerRefresh(){
+    clearInterval(_timerRefreshInterval);
+    _timerRefreshInterval = null;
+}
+
+// Called after loadTimers updates allTimers — start/stop 1s refresh as needed
+function syncTimerRefresh(){
+    const anyRunning = allTimers.some(t => t.status === 'running');
+    if(anyRunning) startTimerRefresh();
+    else           stopTimerRefresh();
 }
 
 async function timerAction(eventKey, action, btn){
@@ -872,39 +901,14 @@ function showFB(name,data){
 function closeFB(){ document.getElementById('fb-modal').classList.add('hidden'); }
 
 // ── Init ─────────────────────────────────────────────────────────────────────
-// Tick running timer displays every second without rebuilding cards
-var _timerTick = 0;
-function tickTimerDisplays(){
-    _timerTick++;
-    allTimers.forEach(function(t){
-        if(t.status !== 'running') return;
-        var rawKey = t.event_key || t.event_name || '';
-        var key    = rawKey.replace(/[^a-zA-Z0-9]/g,'_');
-        var disp   = document.getElementById('ts-display-'+key);
-        var lbl    = document.getElementById('ts-label-'+key);
-        if(!disp) return;
-        t.remaining_seconds = Math.max(0,(t.remaining_seconds||0)-1);
-        t.remaining_secs    = t.remaining_seconds;
-        disp.innerText = fmtSecs(t.remaining_seconds);
-        if(t.remaining_seconds <= 0){
-            t.status = 'finished';
-            disp.className = 'text-4xl font-orbitron font-bold text-rose-400 tracking-widest';
-            if(lbl){ lbl.innerText='Finished'; lbl.className='text-xs font-orbitron text-rose-400'; }
-            // Persist finished state to DB
-            fetch(API+'/api/event/finish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventKey:rawKey})}).catch(function(){});
-        } else if(_timerTick % 10 === 0){
-            // Persist remaining_seconds directly — avoids pause/resume race conditions
-            fetch(API+'/api/event/tick',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventKey:rawKey, remaining_seconds:t.remaining_seconds})}).catch(function(){});
-        }
-    });
-}
-
 (async function init(){
     await fetchAll();
     await refreshFizzToggle();
     renderOverview();
-    setInterval(async()=>{ await fetchAll(); await refreshFizzToggle(); renderCurrentTab(); },30000);
-    setInterval(tickTimerDisplays, 1000);
+    // Full data refresh every 30s (does NOT rebuild timer cards — loadTimers handles that)
+    setInterval(async()=>{ await fetchAll(); await refreshFizzToggle(); renderCurrentTab(); }, 30000);
+    // Start 1s timer refresh if any timer is currently running
+    await loadTimers();
 })();
 </script>
 </body>
