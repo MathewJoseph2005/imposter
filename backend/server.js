@@ -1634,6 +1634,774 @@ app.post('/score/:id', async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// PART 6 — EVENT TIMER SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// GET /api/timer/:eventName — legacy single-timer lookup (uses event_key now)
+app.get('/api/timer/:eventName', async (req, res) => {
+  try {
+    const key = resolveEventKey(decodeURIComponent(req.params.eventName || '').trim());
+    const { data, error } = await supabase
+      .from('event_timers').select('*').eq('event_key', key).maybeSingle();
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    if (!data)  return res.status(404).json({ success: false, message: 'Timer not found: ' + key });
+    const norm = normaliseTimer(data);
+    return res.status(200).json({ success: true, timer: norm });
+  } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
+});
+
+// GET /api/timers — legacy alias, delegates to new logic
+app.get('/api/timers', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('event_timers').select('*').order('event_key');
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    const timers = (data || []).map(normaliseTimer);
+    return res.status(200).json({ success: true, timers });
+  } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
+});
+
+// Legacy computeRemaining — delegates to new function
+function computeRemaining(t) {
+  return computeRemainingV2(t);
+}
+
+// Legacy /api/admin/timer/:eventName/* — all delegate to event_key-based logic
+app.post('/api/admin/timer/:eventName/start', async (req, res) => {
+  req.body = req.body || {};
+  req.body.eventKey = resolveEventKey(decodeURIComponent(req.params.eventName).trim());
+  return (await fetch || require('http')) && res.status(200); // redirect internally
+});
+
+// Simpler approach: just re-use the new handlers inline
+['start','pause','resume','reset'].forEach(action => {
+  app.post('/api/admin/timer/:eventName/'+action, async (req, res) => {
+    try {
+      const key = resolveEventKey(decodeURIComponent(req.params.eventName || '').trim());
+      const { data: t } = await supabase.from('event_timers').select('*').eq('event_key', key).maybeSingle();
+      if (!t) return res.status(404).json({ success: false, message: 'Timer not found: ' + key });
+
+      let updatePayload = {};
+      if (action === 'start') {
+        if (t.status === 'running') return res.status(400).json({ success: false, message: 'Already running.' });
+        const fullSecs = (t.duration_minutes || 15) * 60;
+        updatePayload = { status: 'running', started_at: new Date().toISOString(), paused_at: null, remaining_seconds: fullSecs };
+      } else if (action === 'pause') {
+        if (t.status !== 'running') return res.status(400).json({ success: false, message: 'Not running.' });
+        const runningFor = Math.floor((Date.now() - new Date(t.started_at).getTime()) / 1000);
+        const remaining  = Math.max(0, (t.remaining_seconds || 0) - runningFor);
+        updatePayload = { status: 'paused', paused_at: new Date().toISOString(), started_at: null, remaining_seconds: remaining };
+      } else if (action === 'resume') {
+        if (t.status !== 'paused') return res.status(400).json({ success: false, message: 'Not paused.' });
+        updatePayload = { status: 'running', started_at: new Date().toISOString(), paused_at: null };
+      } else if (action === 'reset') {
+        const fullSecs = (t.duration_minutes || 15) * 60;
+        updatePayload = { status: 'idle', started_at: null, paused_at: null, remaining_seconds: fullSecs };
+      }
+
+      const { error } = await supabase.from('event_timers').update(updatePayload).eq('event_key', key);
+      if (error) return res.status(500).json({ success: false, message: error.message });
+      return res.status(200).json({ success: true, message: 'Timer ' + action + 'ed.', status: updatePayload.status });
+    } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PART 8 — FIZZBUZZ GROUP SUBMISSION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// GET /api/fizzbuzz/status/:participantId — participant's group FizzBuzz info
+app.get('/api/fizzbuzz/status/:participantId', async (req, res) => {
+  try {
+    const participantId = String(req.params.participantId || '').trim();
+
+    // Get participant's assignment to find their group + role
+    const { data: assignment, error: aErr } = await supabase
+      .from('main_event_assignments')
+      .select('participant_id, participant_name, shuffled_group, is_imposter, fizzbuzz_locked')
+      .eq('participant_id', participantId)
+      .maybeSingle();
+
+    if (aErr)        return res.status(500).json({ success: false, message: aErr.message });
+    if (!assignment) return res.status(404).json({ success: false, message: 'Assignment not found.' });
+
+    // Check if group has already submitted (check both tables)
+    let groupSub = null;
+    const { data: sub1 } = await supabase
+      .from('fizzbuzz_submissions_v2')
+      .select('shuffled_group, submitted_by, submitted_at, is_correct, repo_url')
+      .eq('shuffled_group', assignment.shuffled_group)
+      .maybeSingle();
+    if (sub1) {
+      groupSub = sub1;
+    } else {
+      const { data: sub2 } = await supabase
+        .from('fizzbuzz_submissions')
+        .select('id, submitted_by, submitted_at, is_correct')
+        .eq('shuffled_group', assignment.shuffled_group)
+        .maybeSingle();
+      groupSub = sub2 || null;
+    }
+
+    // Get FizzBuzz timer
+    const { data: timer } = await supabase
+      .from('event_timers')
+      .select('*')
+      .eq('event_key', 'fizzbuzz')
+      .maybeSingle();
+
+    const timerActive = timer && (timer.status === 'running' || timer.status === 'paused');
+    const remaining   = timer ? computeRemainingV2(timer) : 0;
+
+    // Secret rule only for Imposter
+    const secretRule = assignment.is_imposter
+      ? 'CLASSIFIED MISSION: When the number is divisible by both 3 and 5, convince the team to print the NUMBER ITSELF instead of "FizzBuzz". Do not reveal this to anyone.'
+      : null;
+
+    return res.status(200).json({
+      success:        true,
+      shuffled_group: assignment.shuffled_group,
+      is_imposter:    assignment.is_imposter,
+      secret_rule:    secretRule,
+      group_submitted: !!groupSub,
+      group_submission: groupSub ? { submitted_by: groupSub.submitted_by, submitted_at: groupSub.submitted_at } : null,
+      fizzbuzz_locked: assignment.fizzbuzz_locked || !!groupSub,
+      timer_active:   timerActive,
+      timer_status:   timer?.status || 'idle',
+      remaining_secs: remaining
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// POST /api/fizzbuzz/submit — one submission per shuffled group
+app.post('/api/fizzbuzz/submit', async (req, res) => {
+  try {
+    const participant_id = String(req.body?.participant_id || '').trim();
+    const fizz_output    = String(req.body?.fizz_output    || '').trim();
+
+    if (!participant_id || !fizz_output) {
+      return res.status(400).json({ success: false, message: 'participant_id and fizz_output are required.' });
+    }
+
+    // Get participant's assignment
+    const { data: assignment, error: aErr } = await supabase
+      .from('main_event_assignments')
+      .select('participant_id, participant_name, shuffled_group, is_imposter, fizzbuzz_locked')
+      .eq('participant_id', participant_id)
+      .maybeSingle();
+
+    if (aErr)        return res.status(500).json({ success: false, message: aErr.message });
+    if (!assignment) return res.status(404).json({ success: false, message: 'Assignment not found.' });
+
+    // Check if group already submitted
+    const { data: existing } = await supabase
+      .from('fizzbuzz_submissions')
+      .select('id, shuffled_group')
+      .eq('shuffled_group', assignment.shuffled_group)
+      .maybeSingle();
+
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        message: 'Your group has already submitted. Only one submission allowed per group.'
+      });
+    }
+
+    // Check timer — submissions only allowed while timer is running or paused (not idle/finished)
+    const { data: timer } = await supabase
+      .from('event_timers')
+      .select('status')
+      .eq('event_key', 'fizzbuzz')
+      .maybeSingle();
+
+    if (timer && timer.status === 'finished') {
+      return res.status(403).json({ success: false, message: 'FizzBuzz round has ended. No more submissions.' });
+    }
+
+    // Check if output looks sabotaged (number where FizzBuzz expected — simple heuristic)
+    // Full scoring is done by admin; just flag for review
+    const lines = fizz_output.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    // Check line 15 (1-indexed) — should be 'FizzBuzz', sabotaged would be '15'
+    const line15 = lines[14] || '';
+    const imposterSabotaged = assignment.is_imposter && /^15$/.test(line15);
+
+    // Insert group submission
+    const { error: insErr } = await supabase
+      .from('fizzbuzz_submissions')
+      .insert({
+        shuffled_group:     assignment.shuffled_group,
+        submitted_by:       assignment.participant_name,
+        participant_id:     participant_id,
+        fizz_output,
+        imposter_sabotaged: imposterSabotaged
+      });
+
+    if (insErr) return res.status(500).json({ success: false, message: insErr.message });
+
+    // Lock all 4 members of the group
+    await supabase
+      .from('main_event_assignments')
+      .update({ fizzbuzz_locked: true })
+      .eq('shuffled_group', assignment.shuffled_group);
+
+    return res.status(200).json({
+      success:       true,
+      message:       'FizzBuzz submission recorded for ' + assignment.shuffled_group + '.',
+      submitted_by:  assignment.participant_name,
+      shuffled_group: assignment.shuffled_group
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PART 9 — FIZZBUZZ SCORING
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// POST /api/admin/fizzbuzz/score — admin marks a group correct/incorrect + apply scoring
+app.post('/api/admin/fizzbuzz/score', async (req, res) => {
+  try {
+    const { shuffled_group, is_correct } = req.body;
+    if (!shuffled_group || is_correct === undefined) {
+      return res.status(400).json({ success: false, message: 'shuffled_group and is_correct are required.' });
+    }
+
+    // Get the submission to check imposter sabotage
+    const { data: sub } = await supabase
+      .from('fizzbuzz_submissions')
+      .select('*')
+      .eq('shuffled_group', shuffled_group)
+      .maybeSingle();
+
+    if (!sub) return res.status(404).json({ success: false, message: 'No submission found for this group.' });
+
+    // Mark submission
+    await supabase.from('fizzbuzz_submissions')
+      .update({ is_correct })
+      .eq('shuffled_group', shuffled_group);
+
+    // Get all submissions ordered by time for speed bonus
+    const { data: allSubs } = await supabase
+      .from('fizzbuzz_submissions')
+      .select('shuffled_group, submitted_at')
+      .order('submitted_at', { ascending: true });
+
+    // Speed bonus: 1st → +5, 2nd → +5, rest → +2
+    const speedBonusMap = {};
+    (allSubs || []).forEach((s, idx) => {
+      speedBonusMap[s.shuffled_group] = idx < 2 ? 5 : 2;
+    });
+
+    // Determine scores for this group
+    const teamScore    = is_correct ? 20 : 0;
+    const speedBonus   = speedBonusMap[shuffled_group] || 2;
+    const imposterSab  = sub.imposter_sabotaged && !is_correct; // sabotage counts only if output is wrong
+
+    // Get all participants in this group
+    const { data: members } = await supabase
+      .from('main_event_assignments')
+      .select('participant_id, is_imposter')
+      .eq('shuffled_group', shuffled_group);
+
+    for (const member of (members || [])) {
+      const impBonus = (imposterSab && member.is_imposter) ? 10 : 0;
+      const memberTeamScore = imposterSab ? 0 : teamScore;
+      const total = memberTeamScore + speedBonus + impBonus;
+
+      await supabase.from('main_event_assignments').update({
+        fizzbuzz_team_score:  memberTeamScore,
+        fizzbuzz_speed_bonus: speedBonus,
+        imposter_bonus:       impBonus,
+        fizzbuzz_score:       total
+      }).eq('participant_id', member.participant_id);
+    }
+
+    return res.status(200).json({ success: true, message: 'FizzBuzz scores applied for ' + shuffled_group });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/admin/fizzbuzz/submissions — all group FizzBuzz submissions for admin dashboard
+app.get('/api/admin/fizzbuzz/submissions', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('fizzbuzz_submissions')
+      .select('*')
+      .order('submitted_at', { ascending: true });
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    return res.status(200).json({ success: true, submissions: data || [] });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PART 12 — INDIVIDUAL SCORE SUMMARY
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// GET /api/my-scores/:participantId — participant sees only their own scores
+app.get('/api/my-scores/:participantId', async (req, res) => {
+  try {
+    const participantId = String(req.params.participantId || '').trim();
+    const { data, error } = await supabase
+      .from('main_event_assignments')
+      .select('participant_name, main_event_score, fizzbuzz_score, fizzbuzz_team_score, fizzbuzz_speed_bonus, imposter_bonus, ai_score')
+      .eq('participant_id', participantId)
+      .maybeSingle();
+
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    if (!data)  return res.status(404).json({ success: false, message: 'Not found.' });
+
+    const mainEvent  = Number(data.main_event_score || 0);
+    const fizzbuzz   = Number(data.fizzbuzz_score    || 0);
+    const impBonus   = Number(data.imposter_bonus    || 0);
+    const total      = mainEvent + fizzbuzz + impBonus;
+
+    return res.status(200).json({
+      success: true,
+      scores: {
+        participant_name:    data.participant_name,
+        main_event_score:    mainEvent,
+        fizzbuzz_score:      fizzbuzz,
+        fizzbuzz_team_score: Number(data.fizzbuzz_team_score  || 0),
+        fizzbuzz_speed_bonus:Number(data.fizzbuzz_speed_bonus || 0),
+        imposter_bonus:      impBonus,
+        total_individual:    total
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UNIFIED TIMER ROUTES — uses real event_timers table
+// Real schema: event_key TEXT PK, event_name TEXT, duration_minutes INTEGER,
+//              started_at TIMESTAMPTZ, paused_at TIMESTAMPTZ,
+//              remaining_seconds INTEGER, status TEXT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Map event_key aliases → event_key values in the real table
+const EVENT_KEY_MAP = {
+  'main_event':    'main_event',
+  'fizzbuzz':      'fizzbuzz',
+  'code_imposter': 'code_imposter',
+  'sherlock':      'sherlock',
+  // also accept display names
+  'Main Event':      'main_event',
+  'FizzBuzz':        'fizzbuzz',
+  'Code Imposter':   'code_imposter',
+  'Sherlock Holmes': 'sherlock'
+};
+
+function resolveEventKey(input) {
+  if (!input) return null;
+  return EVENT_KEY_MAP[input] || input.toLowerCase().replace(/\s+/g, '_');
+}
+
+// Compute remaining_seconds from DB row (handles running timers live)
+function computeRemainingV2(t) {
+  if (!t) return 0;
+  const fullSecs = (t.duration_minutes || 0) * 60;
+  if (t.status === 'finished') return 0;
+  if (t.status === 'running' && t.started_at) {
+    const runningFor = Math.floor((Date.now() - new Date(t.started_at).getTime()) / 1000);
+    const stored     = t.remaining_seconds != null ? t.remaining_seconds : fullSecs;
+    return Math.max(0, stored - runningFor);
+  }
+  return t.remaining_seconds != null ? t.remaining_seconds : fullSecs;
+}
+
+// Normalise a DB row to a consistent shape for the frontend
+function normaliseTimer(t) {
+  const remaining = computeRemainingV2(t);
+  return {
+    event_key:         t.event_key,
+    event_name:        t.event_name || t.event_key,
+    duration_minutes:  t.duration_minutes,
+    duration_secs:     (t.duration_minutes || 0) * 60,  // compat alias
+    started_at:        t.started_at,
+    paused_at:         t.paused_at,
+    remaining_seconds: remaining,
+    remaining_secs:    remaining,                        // compat alias
+    status:            t.status || 'idle'
+  };
+}
+
+// ── GET /api/event-timers ─────────────────────────────────────────────────────
+app.get('/api/event-timers', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('event_timers')
+      .select('*')
+      .order('event_key');   // event_key is the PK — safe to order by
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    const timers = (data || []).map(normaliseTimer);
+    return res.status(200).json({ success: true, timers });
+  } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
+});
+
+// ── GET /api/fizzbuzz/toggle ──────────────────────────────────────────────────
+app.get('/api/fizzbuzz/toggle', async (req, res) => {
+  try {
+    const { data } = await supabase.from('event_timers').select('*')
+      .eq('event_key', 'fizzbuzz').maybeSingle();
+    if (!data) return res.status(200).json({ success: true, fizzbuzz_open: false, status: 'idle', remaining_seconds: 1200 });
+    const norm = normaliseTimer(data);
+    const open = norm.status === 'running' || norm.status === 'paused';
+    return res.status(200).json({ success: true, fizzbuzz_open: open, status: norm.status, remaining_seconds: norm.remaining_seconds });
+  } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
+});
+
+// ── POST /api/admin/fizzbuzz/toggle ───────────────────────────────────────────
+app.post('/api/admin/fizzbuzz/toggle', async (req, res) => {
+  try {
+    const { action } = req.body;
+    if (!action) return res.status(400).json({ success: false, message: 'action required: "on" or "off"' });
+
+    const { data: t } = await supabase.from('event_timers').select('*')
+      .eq('event_key', 'fizzbuzz').maybeSingle();
+    if (!t) return res.status(404).json({ success: false, message: 'FizzBuzz timer not found.' });
+
+    const fullSecs = (t.duration_minutes || 20) * 60;
+    if (action === 'on') {
+      const { error } = await supabase.from('event_timers').update({
+        status: 'running', started_at: new Date().toISOString(),
+        paused_at: null, remaining_seconds: fullSecs
+      }).eq('event_key', 'fizzbuzz');
+      if (error) return res.status(500).json({ success: false, message: error.message });
+      return res.status(200).json({ success: true, fizzbuzz_open: true, status: 'running', remaining_seconds: fullSecs });
+    } else {
+      const { error } = await supabase.from('event_timers').update({
+        status: 'idle', started_at: null, paused_at: null, remaining_seconds: fullSecs
+      }).eq('event_key', 'fizzbuzz');
+      if (error) return res.status(500).json({ success: false, message: error.message });
+      return res.status(200).json({ success: true, fizzbuzz_open: false, status: 'idle', remaining_seconds: fullSecs });
+    }
+  } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
+});
+
+// ── POST /api/event/start ─────────────────────────────────────────────────────
+app.post('/api/event/start', async (req, res) => {
+  try {
+    const eventKey = resolveEventKey(String(req.body?.eventKey || '').trim());
+    if (!eventKey) return res.status(400).json({ success: false, message: 'eventKey is required.' });
+
+    const { data: t } = await supabase.from('event_timers').select('*').eq('event_key', eventKey).maybeSingle();
+    if (!t) return res.status(404).json({ success: false, message: 'Timer not found: ' + eventKey });
+    if (t.status === 'running') return res.status(400).json({ success: false, message: 'Already running.' });
+
+    const fullSecs = (t.duration_minutes || 15) * 60;
+    const { error } = await supabase.from('event_timers').update({
+      status: 'running', started_at: new Date().toISOString(),
+      paused_at: null, remaining_seconds: fullSecs
+    }).eq('event_key', eventKey);
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    return res.status(200).json({ success: true, status: 'running', remaining_seconds: fullSecs });
+  } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
+});
+
+// ── POST /api/event/pause ─────────────────────────────────────────────────────
+app.post('/api/event/pause', async (req, res) => {
+  try {
+    const eventKey = resolveEventKey(String(req.body?.eventKey || '').trim());
+    const { data: t } = await supabase.from('event_timers').select('*').eq('event_key', eventKey).maybeSingle();
+    if (!t || t.status !== 'running') return res.status(400).json({ success: false, message: 'Timer is not running.' });
+
+    const runningFor = Math.floor((Date.now() - new Date(t.started_at).getTime()) / 1000);
+    const remaining  = Math.max(0, (t.remaining_seconds || 0) - runningFor);
+
+    const { error } = await supabase.from('event_timers').update({
+      status: 'paused', paused_at: new Date().toISOString(),
+      started_at: null, remaining_seconds: remaining
+    }).eq('event_key', eventKey);
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    return res.status(200).json({ success: true, status: 'paused', remaining_seconds: remaining });
+  } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
+});
+
+// ── POST /api/event/resume ────────────────────────────────────────────────────
+app.post('/api/event/resume', async (req, res) => {
+  try {
+    const eventKey = resolveEventKey(String(req.body?.eventKey || '').trim());
+    const { data: t } = await supabase.from('event_timers').select('*').eq('event_key', eventKey).maybeSingle();
+    if (!t || t.status !== 'paused') return res.status(400).json({ success: false, message: 'Timer is not paused.' });
+
+    const { error } = await supabase.from('event_timers').update({
+      status: 'running', started_at: new Date().toISOString(), paused_at: null
+    }).eq('event_key', eventKey);
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    return res.status(200).json({ success: true, status: 'running', remaining_seconds: t.remaining_seconds });
+  } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
+});
+
+// ── POST /api/event/reset ─────────────────────────────────────────────────────
+app.post('/api/event/reset', async (req, res) => {
+  try {
+    const eventKey = resolveEventKey(String(req.body?.eventKey || '').trim());
+    const { data: t } = await supabase.from('event_timers').select('duration_minutes').eq('event_key', eventKey).maybeSingle();
+    if (!t) return res.status(404).json({ success: false, message: 'Timer not found.' });
+
+    const fullSecs = (t.duration_minutes || 15) * 60;
+    const { error } = await supabase.from('event_timers').update({
+      status: 'idle', started_at: null, paused_at: null, remaining_seconds: fullSecs
+    }).eq('event_key', eventKey);
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    return res.status(200).json({ success: true, status: 'idle', remaining_seconds: fullSecs });
+  } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
+});
+
+// ── POST /api/main-event/unlock ───────────────────────────────────────────────
+app.post('/api/main-event/unlock', async (req, res) => {
+  try {
+    const participantId = String(req.body?.participantId || req.body?.participant_id || '').trim();
+    if (!participantId) return res.status(400).json({ success: false, message: 'participantId is required.' });
+
+    const { error } = await supabase
+      .from('main_event_assignments')
+      .update({
+        github_repo:       null,
+        github_repo_url:   null,
+        github_owner:      null,
+        github_repo_name:  null,
+        github_branch:     null,
+        submitted_at:      null,
+        submission_locked: false,
+        submission_status: 'Pending',
+        evaluation_status: 'Pending',
+        ai_score:          null,
+        ai_feedback:       null
+      })
+      .eq('participant_id', participantId);
+
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    return res.status(200).json({ success: true, message: 'Submission unlocked.' });
+  } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
+});
+
+// ── GET /api/fizzbuzz/group-status/:group ─────────────────────────────────────
+// Returns whether a shuffled group has submitted (for FizzBuzz page locking)
+app.get('/api/fizzbuzz/group-status/:group', async (req, res) => {
+  try {
+    const group = decodeURIComponent(req.params.group || '').trim();
+    const { data } = await supabase
+      .from('fizzbuzz_submissions_v2')
+      .select('shuffled_group, submitted_by, submitted_at, repo_url, status')
+      .eq('shuffled_group', group)
+      .maybeSingle();
+    return res.status(200).json({ success: true, submitted: !!data, submission: data || null });
+  } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
+});
+
+// ── POST /api/fizzbuzz/submit-v2 ──────────────────────────────────────────────
+// FizzBuzz group submission — stores code + language, not GitHub repo
+app.post('/api/fizzbuzz/submit-v2', async (req, res) => {
+  try {
+    const participant_id = String(req.body?.participant_id || '').trim();
+    const fizz_output    = String(req.body?.fizz_output    || req.body?.code || '').trim();
+    const language       = String(req.body?.language       || 'Unknown').trim();
+
+    if (!participant_id) return res.status(400).json({ success: false, message: 'participant_id is required.' });
+    if (!fizz_output)    return res.status(400).json({ success: false, message: 'Code/output is required.' });
+
+    const { data: assignment } = await supabase
+      .from('main_event_assignments')
+      .select('participant_id, participant_name, shuffled_group, is_imposter, fizzbuzz_locked')
+      .eq('participant_id', participant_id)
+      .maybeSingle();
+
+    if (!assignment) return res.status(404).json({ success: false, message: 'Assignment not found.' });
+
+    // Check if group already submitted
+    const { data: existing } = await supabase
+      .from('fizzbuzz_submissions_v2')
+      .select('shuffled_group, submitted_by')
+      .eq('shuffled_group', assignment.shuffled_group)
+      .maybeSingle();
+
+    if (existing) return res.status(409).json({
+      success: false,
+      message: `Already submitted by ${existing.submitted_by}.`
+    });
+
+    // Check timer — use real event_timers table
+    const { data: timer } = await supabase
+      .from('event_timers')
+      .select('status')
+      .eq('event_key', 'fizzbuzz')
+      .maybeSingle();
+    if (timer && timer.status === 'finished') {
+      return res.status(403).json({ success: false, message: 'FizzBuzz round has ended.' });
+    }
+
+    // Detect imposter sabotage heuristic
+    const lines = fizz_output.split('\n').map(l => l.trim()).filter(l => l);
+    const imposterSabotaged = assignment.is_imposter && (lines[14] === '15' || lines[14] === '15.0');
+
+    // Insert submission with language field
+    const { error: insErr } = await supabase.from('fizzbuzz_submissions_v2').insert({
+      shuffled_group:     assignment.shuffled_group,
+      submitted_by:       assignment.participant_name,
+      participant_id,
+      fizz_output,
+      language,
+      repo_url:           null,
+      imposter_sabotaged: imposterSabotaged
+    });
+
+    if (insErr) return res.status(500).json({ success: false, message: insErr.message });
+
+    // Lock all 4 members of the group
+    await supabase.from('main_event_assignments')
+      .update({ fizzbuzz_locked: true, fizzbuzz_completed: true })
+      .eq('shuffled_group', assignment.shuffled_group);
+
+    return res.status(200).json({
+      success:        true,
+      shuffled_group: assignment.shuffled_group,
+      submitted_by:   assignment.participant_name,
+      language
+    });
+  } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
+});
+
+// ── GET /api/admin/fizzbuzz/submissions-v2 ────────────────────────────────────
+app.get('/api/admin/fizzbuzz/submissions-v2', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('fizzbuzz_submissions_v2')
+      .select('*')
+      .order('submitted_at', { ascending: true });
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    return res.status(200).json({ success: true, submissions: data || [] });
+  } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
+});
+
+// ── POST /api/admin/fizzbuzz/score-v2 ─────────────────────────────────────────
+app.post('/api/admin/fizzbuzz/score-v2', async (req, res) => {
+  try {
+    const { shuffled_group, is_correct } = req.body;
+    if (!shuffled_group || is_correct === undefined) {
+      return res.status(400).json({ success: false, message: 'shuffled_group and is_correct are required.' });
+    }
+
+    const { data: sub } = await supabase
+      .from('fizzbuzz_submissions_v2')
+      .select('*')
+      .eq('shuffled_group', shuffled_group)
+      .maybeSingle();
+    if (!sub) return res.status(404).json({ success: false, message: 'No submission found.' });
+
+    await supabase.from('fizzbuzz_submissions_v2').update({ is_correct }).eq('shuffled_group', shuffled_group);
+
+    // Speed bonus: order by submitted_at
+    const { data: allSubs } = await supabase
+      .from('fizzbuzz_submissions_v2')
+      .select('shuffled_group, submitted_at')
+      .order('submitted_at', { ascending: true });
+
+    const speedMap = {};
+    (allSubs || []).forEach((s, i) => { speedMap[s.shuffled_group] = i < 2 ? 5 : 2; });
+
+    const teamScore  = is_correct ? 20 : 0;
+    const speedBonus = speedMap[shuffled_group] || 2;
+    const sabotaged  = sub.imposter_sabotaged && !is_correct;
+
+    await supabase.from('fizzbuzz_submissions_v2')
+      .update({ speed_bonus: speedBonus, imposter_bonus: sabotaged ? 10 : 0 })
+      .eq('shuffled_group', shuffled_group);
+
+    const { data: members } = await supabase
+      .from('main_event_assignments')
+      .select('participant_id, is_imposter, main_event_score')
+      .eq('shuffled_group', shuffled_group);
+
+    for (const m of (members || [])) {
+      const impBonus  = (sabotaged && m.is_imposter) ? 10 : 0;
+      const fzScore   = sabotaged ? 0 : (teamScore + speedBonus);
+      const mainScore = Number(m.main_event_score || 0);
+      await supabase.from('main_event_assignments').update({
+        fizzbuzz_team_score:  sabotaged ? 0 : teamScore,
+        fizzbuzz_speed_bonus: speedBonus,
+        imposter_bonus:       impBonus,
+        fizzbuzz_score:       fzScore + impBonus,
+        total_individual_score: mainScore + fzScore + impBonus
+      }).eq('participant_id', m.participant_id);
+    }
+
+    return res.status(200).json({ success: true, message: 'Scores applied for ' + shuffled_group });
+  } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
+});
+
+// ── POST /api/admin/manual-score-v2 ──────────────────────────────────────────
+// Saves manual event marks per team using the flat schema
+app.post('/api/admin/manual-score-v2', async (req, res) => {
+  try {
+    const { original_team, event_name, marks } = req.body;
+    if (!original_team || !event_name || marks === undefined) {
+      return res.status(400).json({ success: false, message: 'original_team, event_name, marks required.' });
+    }
+    const col = event_name.toLowerCase().replace(/\s+/g, '_').replace(/-/g, '_');
+    const allowed = ['code_imposter', 'sherlock', 'drawing'];
+    if (!allowed.includes(col)) {
+      return res.status(400).json({ success: false, message: 'Invalid event_name.' });
+    }
+    const updateObj = {};
+    updateObj[col] = Math.min(100, Math.max(0, Number(marks)));
+    updateObj['updated_at'] = new Date().toISOString();
+
+    const { error } = await supabase.from('manual_event_scores_v2')
+      .upsert({ original_team, ...updateObj }, { onConflict: 'original_team' });
+
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    return res.status(200).json({ success: true, message: 'Marks saved.' });
+  } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
+});
+
+// ── GET /api/admin/manual-scores-v2 ──────────────────────────────────────────
+app.get('/api/admin/manual-scores-v2', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('manual_event_scores_v2').select('*');
+    if (error) return res.status(500).json({ success: false, message: error.message });
+    return res.status(200).json({ success: true, scores: data || [] });
+  } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
+});
+
+// ── GET /api/admin/podium-v2 ──────────────────────────────────────────────────
+// Full podium using both individual scores and manual team marks
+app.get('/api/admin/podium-v2', async (req, res) => {
+  try {
+    const [assignRes, manualRes] = await Promise.all([
+      supabase.from('main_event_assignments').select('original_team, main_event_score, fizzbuzz_score, imposter_bonus, total_individual_score'),
+      supabase.from('manual_event_scores_v2').select('*')
+    ]);
+
+    const teamMap = {};
+    (assignRes.data || []).forEach(r => {
+      const t = r.original_team || 'Unknown';
+      if (!teamMap[t]) teamMap[t] = { team: t, main_event: 0, fizzbuzz: 0, manual: 0 };
+      teamMap[t].main_event += Number(r.main_event_score || 0);
+      teamMap[t].fizzbuzz   += Number(r.fizzbuzz_score   || 0);
+    });
+
+    (manualRes.data || []).forEach(r => {
+      const t = r.original_team;
+      if (!teamMap[t]) teamMap[t] = { team: t, main_event: 0, fizzbuzz: 0, manual: 0 };
+      teamMap[t].manual += Number(r.code_imposter || 0) + Number(r.sherlock || 0) + Number(r.drawing || 0);
+    });
+
+    const podium = Object.values(teamMap)
+      .map(t => ({ ...t, grand_total: t.main_event + t.fizzbuzz + t.manual }))
+      .sort((a, b) => b.grand_total - a.grand_total);
+
+    return res.status(200).json({ success: true, podium });
+  } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
